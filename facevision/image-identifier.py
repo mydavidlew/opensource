@@ -52,7 +52,7 @@ def main(args):
     for (i, imagePath) in enumerate(imagePaths):
         # convert image to Greyscale for haarcascade
         image = cv.imread(imagePath)
-#        gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+        gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
 #        faces = faceCascade.detectMultiScale(gray,
 #                                             scaleFactor=1.1,
 #                                             minNeighbors=5,
@@ -66,9 +66,6 @@ def main(args):
         encodings = fr.face_encodings(rgb, boxes)
         print("Found [ {0} / {1} ] faces in".format(len(encodings), len(boxes)), imagePath)
 
-        names = []
-        locations = []
-        facevalues = []
         # loop over the facial embeddings incase
         # we have multiple embeddings for multiple fcaes
         for (encoding, box) in zip(encodings, boxes):
@@ -91,11 +88,8 @@ def main(args):
             cv.rectangle(image, (x1, y2-25), (x2, y2), (0, 255, 0), cv.FILLED)
             cv.putText(image, name, (x1+3, y2-6), cv.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 0), 2)
 
-            # update the list of names
-            names.append(name)
-            locations.append(box)
-            facevalues.append(matchedIdx)
-            print("Name: {}  Pos: {}  Distance: {}".format(name, box, fvalues))
+            # display the encoding statistics
+            print("Distance: {}  Pos: {}  Name: {}".format(fvalues, box, name))
 
         scale_percent = 70  # percent of original size
         width = int(image.shape[1] * scale_percent / 100)

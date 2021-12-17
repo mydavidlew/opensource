@@ -58,16 +58,17 @@ def main(args):
         boxes = fr.face_locations(rgb, model="hog") #fr.face_locations(rgb, number_of_times_to_upsample=1, model="hog")
         # the facial embeddings for face in input
         encodings = fr.face_encodings(rgb, boxes)
-        names = []
 
         t = clock()
+        names = []
         # loop over the facial embeddings incase
         # we have multiple embeddings for multiple fcaes
-        for (encoding, box) in zip(encodings, boxes):
+        for encoding in encodings:
             # Compare encodings with encodings in data["encodings"]
             # Matches contain array with boolean values and True for the embeddings it matches closely
             # and False for rest
             matches = fr.compare_faces(data["encodings"], encoding)
+
             # set name = Unknown if no encoding matches
             name = "Unknown"
             # check to see if we have found a match
@@ -84,9 +85,9 @@ def main(args):
                     counts[name] = counts.get(name, 0) + 1
                 # set name which has highest count
                 name = max(counts, key=counts.get)
-
             # update the list of names
             names.append(name)
+
             # loop over the recognized faces
             for ((x, y, w, h), name) in zip(faces, names):
                 # rescale the face coordinates

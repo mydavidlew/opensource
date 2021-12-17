@@ -7,6 +7,7 @@ USAGE:
 
 import face_recognition as fr
 import cv2 as cv
+import numpy as np
 import pickle
 import argparse
 import os
@@ -21,18 +22,32 @@ def draw_str(dst, target, s):
 def clock():
     return cv.getTickCount() / cv.getTickFrequency()
 
-def main(args):
+def get_haarcascade():
     # find path of xml file containing haarcascade file
-    cascPathface = os.getcwd() + args["haarcascade"]
-    enbedPathface = os.getcwd() + args["encodings"]
+    # cascPathface = os.path.dirname(cv2.__file__) + "Classifier/haarcascade_frontalface_alt2.xml"
+    cascPathface = os.getcwd() + args["haarcascade"] # "/Classifier/haarcascade_frontalface_alt2.xml"
     print("Classifier:", cascPathface)
-    print("EmbeddedFace:", enbedPathface)
 
     # load the harcaascade in the cascade classifier
     faceCascade = cv.CascadeClassifier(cascPathface)
+    return faceCascade
+
+def get_encodedface():
+    # find path of vector file containing encoded face file
+    # enbedPathface = os.path.dirname(cv2.__file__) + "Vectors/myface_encoded"
+    enbedPathface = os.getcwd() + args["encodings"]  # "/Vectors/myface_encoded"
+    print("EmbeddedFace:", enbedPathface)
 
     # load the known faces and embeddings saved in last file
-    data = pickle.loads(open(enbedPathface, "rb").read())
+    embedFace = pickle.loads(open(enbedPathface, "rb").read())
+    return embedFace
+
+def main(args):
+    # load the harcaascade in the cascade classifier
+    faceCascade = get_haarcascade()
+
+    # load the known faces and embeddings saved in last file
+    data = get_encodedface()
 
     print("Streaming started")
     video_capture = cv.VideoCapture(0)
@@ -46,53 +61,44 @@ def main(args):
         # grab the frame from the threaded video stream
         ret, frame = video_capture.read()
         gray = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-        faces = faceCascade.detectMultiScale(gray,
-                                             scaleFactor=1.1,
-                                             minNeighbors=5,
-                                             minSize=(30, 30),
-                                             flags=cv.CASCADE_SCALE_IMAGE)
+#        faces = faceCascade.detectMultiScale(gray,
+#                                             scaleFactor=1.1,
+#                                             minNeighbors=5,
+#                                             minSize=(30, 30),
+#                                             flags=cv.CASCADE_SCALE_IMAGE)
 
         # convert the input frame from BGR to RGB
         rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
         # Use Face_recognition to locate faces
-        boxes = fr.face_locations(rgb, model="hog") #fr.face_locations(rgb, number_of_times_to_upsample=1, model="hog")
+        boxes = fr.face_locations(rgb, model="hog")
         # the facial embeddings for face in input
         encodings = fr.face_encodings(rgb, boxes)
-        names = []
 
         t = clock()
         # loop over the facial embeddings incase
         # we have multiple embeddings for multiple fcaes
         for (encoding, box) in zip(encodings, boxes):
             # Compare encodings with encodings in data["encodings"]
-            # Matches contain array with boolean values and True for the embeddings it matches closely
-            # and False for rest
+            # Matches contain array with boolean values and True for the embeddings it matches closely & False for rest
             matches = fr.compare_faces(data["encodings"], encoding)
-            # set name = Unknown if no encoding matches
-            name = "Unknown"
-            # check to see if we have found a match
-            if True in matches:
-                # Find positions at which we get True and store them
-                matchedIdxs = [i for (i, b) in enumerate(matches) if b]
-                counts = {}
-                # loop over the matched indexes and maintain a count for
-                # each recognized face face
-                for i in matchedIdxs:
-                    # Check the names at respective indexes we stored in matchedIdxs
-                    name = data["names"][i]
-                    # increase count for the name we got
-                    counts[name] = counts.get(name, 0) + 1
-                # set name which has highest count
-                name = max(counts, key=counts.get)
+            # list of values (floating point) of the facial distance, lowest value present the best or closet facial match
+            fvalues = fr.face_distance(data["encodings"], encoding)
+            # get the lowest facial distance value from the array object
+            matchedIdx = np.argmin(fvalues)
 
-            # update the list of names
-            names.append(name)
-            # loop over the recognized faces
-            for ((x, y, w, h), name) in zip(faces, names):
-                # rescale the face coordinates
-                # draw the predicted face name on the image
-                cv.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-                cv.putText(frame, name, (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.75, (255, 0, 255), 2)
+            # set name = unknown if no encoding matches
+            name = "NaN"
+            if matches[matchedIdx]:
+                name = data["names"][matchedIdx]
+
+            # draw the predicted face name on the image
+            y1, x2, y2, x1 = box
+            cv.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv.rectangle(frame, (x1, y2-25), (x2, y2), (0, 255, 0), cv.FILLED)
+            cv.putText(frame, name, (x1+3, y2-6), cv.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 0), 2)
+
+            # display the encoding statistics
+            print("Distance: {}  Pos: {}  Name: {}".format(fvalues, box, name))
 
         dt = clock() - t
         draw_str(frame, (10, 20), 'time: %.4f ms' % (dt * 1000))
