@@ -2,12 +2,11 @@
 '''
 identify an encoded face from image files based on the network that has already been trained to create 128-d embeddings on a dataset of ~3 million images.
 USAGE:
-    image-identifier.py [--dataset <Images/Random>] [--haarcascade <Classifier/haarcascade_frontalface_alt2.xml>] [--encodings <Vectors/myface_encoded>]
+    image-finder.py [--dataset <Images/Random>] [--haarcascade <Classifier/haarcascade_frontalface_alt2.xml>] [--encodings <Vectors/myface_encoded>]
 '''
 
 import face_recognition as fr
 import cv2 as cv
-import numpy as np
 import argparse
 import pickle
 import os
@@ -52,12 +51,12 @@ def main(args):
     for (i, imagePath) in enumerate(imagePaths):
         # convert image to Greyscale for haarcascade
         image = cv.imread(imagePath)
-#        gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
-#        faces = faceCascade.detectMultiScale(gray,
-#                                             scaleFactor=1.1,
-#                                             minNeighbors=5,
-#                                             minSize=(60, 60),
-#                                             flags=cv.CASCADE_SCALE_IMAGE)
+        gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
+        faces = faceCascade.detectMultiScale(gray,
+                                             scaleFactor=1.1,
+                                             minNeighbors=5,
+                                             minSize=(60, 60),
+                                             flags=cv.CASCADE_SCALE_IMAGE)
 
         # convert the input image from BGR to RGB
         rgb = cv.cvtColor(image, cv.COLOR_BGR2RGB)
@@ -67,35 +66,39 @@ def main(args):
         print("Found [ {0} / {1} ] faces in".format(len(encodings), len(boxes)), imagePath)
 
         names = []
-        locations = []
-        facevalues = []
         # loop over the facial embeddings incase
         # we have multiple embeddings for multiple fcaes
-        for (encoding, box) in zip(encodings, boxes):
+        for encoding in encodings:
             # Compare encodings with encodings in data["encodings"]
             # Matches contain array with boolean values and True for the embeddings it matches closely & False for rest
             matches = fr.compare_faces(data["encodings"], encoding)
-            # list of values (floating point) of the facial distance, lowest value present the best or closet facial match
-            fvalues = fr.face_distance(data["encodings"], encoding)
-            # get the lowest facial distance value from the array object
-            matchedIdx = np.argmin(fvalues)
 
             # set name = unknown if no encoding matches
             name = "NaN"
-            if matches[matchedIdx]:
-                name = data["names"][matchedIdx]
+            # check to see if we have found a match
+            if True in matches:
+                # Find positions at which we get True and store them
+                matchedIdxs = [i for (i, b) in enumerate(matches) if b]
+                counts = {}
 
-            # draw the predicted face name on the image
-            y1, x2, y2, x1 = box
-            cv.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv.rectangle(image, (x1, y2-25), (x2, y2), (0, 255, 0), cv.FILLED)
-            cv.putText(image, name, (x1+3, y2-6), cv.FONT_HERSHEY_SIMPLEX, 0.65, (255, 0, 0), 2)
-
+                # loop over the matched indexes and maintain a count for
+                # each recognized face face
+                for i in matchedIdxs:
+                    # Check the names at respective indexes we stored in matchedIdxs
+                    name = data["names"][i]
+                    # increase count for the name we got
+                    counts[name] = counts.get(name, 0) + 1
+                # set name which has highest count
+                name = max(counts, key=counts.get)
             # update the list of names
             names.append(name)
-            locations.append(box)
-            facevalues.append(matchedIdx)
-            print("Name: {}  Pos: {}  Distance: {}".format(name, box, fvalues))
+
+        # loop over the recognized faces
+        for ((x, y, w, h), name) in zip(faces, names):
+            # rescale the face coordinates
+            # draw the predicted face name on the image
+            cv.rectangle(image, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv.putText(image, name, (x, y), cv.FONT_HERSHEY_SIMPLEX, 0.75, (0, 255, 255), 2)
 
         scale_percent = 70  # percent of original size
         width = int(image.shape[1] * scale_percent / 100)

@@ -13,7 +13,7 @@ import cv2 as cv
 def draw_str(dst, target, s):
     x, y = target
     cv.putText(dst, s, (x+1, y+1), cv.FONT_HERSHEY_PLAIN, 1.0, (0, 0, 0), thickness=2, lineType=cv.LINE_AA)
-    cv.putText(dst, s, (x, y), cv.FONT_HERSHEY_PLAIN, 1.0, (255, 255, 255), lineType=cv.LINE_AA)
+    cv.putText(dst, s, (x, y), cv.FONT_HERSHEY_PLAIN, 1.0, (255, 0, 255), lineType=cv.LINE_AA)
 
 def clock():
     return cv.getTickCount() / cv.getTickFrequency()
@@ -24,7 +24,7 @@ def create_capture(source = 0):
 
 def detect(img, cascade):
     #rects = cascade.detectMultiScale(img, scaleFactor=1.3, minNeighbors=4, minSize=(30, 30), flags=cv.CASCADE_SCALE_IMAGE)
-    rects = cascade.detectMultiScale(img, scaleFactor=1.1, minNeighbors=3, minSize=(30, 30), flags=cv.CASCADE_SCALE_IMAGE)
+    rects = cascade.detectMultiScale(img, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30), flags=cv.CASCADE_SCALE_IMAGE)
     if len(rects) == 0:
         return []
     rects[:,2:] += rects[:,:2]
@@ -67,7 +67,8 @@ def main():
         if not nested.empty():
             for x1, y1, x2, y2 in rects:
                 roi = gray[y1:y2, x1:x2]
-                subrects = detect(roi.copy(), nested)
+                #subrects = detect(roi.copy(), nested)
+                subrects = detect(roi, nested)
 
                 #vis_roi = vis[y1:y2, x1:x2]
                 #draw_rects(vis_roi, subrects, (255, 0, 0))

@@ -2,7 +2,7 @@
 '''
 identify an encoded face from live video feed based on the network that has already been trained to create 128-d embeddings on a dataset of ~3 million images.
 USAGE:
-    face-identifier.py [--haarcascade <Classifier/haarcascade_frontalface_alt2.xml>] [--encodings <Vectors/myface_encoded>]
+    face-finder.py [--haarcascade <Classifier/haarcascade_frontalface_alt2.xml>] [--encodings <Vectors/myface_encoded>]
 '''
 
 import face_recognition as fr

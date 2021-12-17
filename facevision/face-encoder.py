@@ -38,9 +38,9 @@ def main(args):
 
         # load the input image and convert it from BGR (OpenCV ordering)
         # to dlib ordering (RGB)
-        image = cv.imread(imagePath)
-        rgb = cv.cvtColor(image, cv.COLOR_BGR2RGB)
-        #rgb = fr.load_image_file(imagePath, mode="RGB")
+        ##image = cv.imread(imagePath)
+        ##rgb = cv.cvtColor(image, cv.COLOR_BGR2RGB)
+        rgb = fr.load_image_file(imagePath, mode="RGB")
 
         # Use Face_recognition to locate faces
         # only two face detection methods, either 'hog' or 'cnn'
@@ -73,7 +73,7 @@ def main(args):
         # finish time
         dt = clock() - t
         w, h = getsize(rgb)
-        print("ID:", name, "[{0}]:".format(i), imagePath, "w={0}px h={1}px".format(w, h), "t=%.2fs" %dt, "face={}".format(len(boxes)))
+        print("ID:", name, "[{0}]:".format(i), imagePath, "w={0}px h={1}px".format(w, h), "t=%.2fs" %dt, "face=[{}/{}]".format(len(encodings), len(boxes)))
 
     # save emcodings along with their names in dictionary data
     data = {"encodings": knownEncodings, "names": knownNames}
@@ -92,9 +92,9 @@ if __name__ == '__main__':
                     help="path to input directory of faces + images")
     ap.add_argument("-e", "--encodings", required=False, type=str, default="Vectors/myface_encoded",
                     help="path to serialized db of facial encodings")
-    ap.add_argument("-d", "--facemodel", required=False, type=str, default="hog",
+    ap.add_argument("-d", "--facemodel", required=False, type=str, default="xxx",
                     help="face detection model to use: either `hog` or `cnn`")
-    ap.add_argument("-s", "--showface", required=False, type=bool, default=False,
+    ap.add_argument("-s", "--showface", required=False, type=bool, default=True,
                     help="display the face detection images")
     args = vars(ap.parse_args())
     # run the face identification application
