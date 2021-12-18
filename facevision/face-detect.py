@@ -57,15 +57,15 @@ def main():
         totalframe += 1
 
         _ret, img = cam.read()
-        gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-        gray = cv.equalizeHist(gray)
+        #img = cv.imread("Images/Random/EXO.jpg")
 
+        gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
         rects = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=6, minSize=(30, 30), flags=cv.CASCADE_SCALE_IMAGE)
         for x, y, w, h in rects:
             cv.rectangle(img, (x, y), (x+w, y+h), (0, 255, 0), 2)
-            roi = gray[y:y+h, x:x+w]
 
-            subrects = nested.detectMultiScale(roi, scaleFactor=1.05, minNeighbors=5, minSize=(30, 30), flags=cv.CASCADE_SCALE_IMAGE)
+            roi = gray[y:y+h, x:x+w]
+            subrects = nested.detectMultiScale(roi, scaleFactor=1.05, minNeighbors=4, minSize=(30, 30), flags=cv.CASCADE_SCALE_IMAGE)
             for x1, y1, w1, h1 in subrects:
                 cv.rectangle(img, (x+x1, y+y1), (x+x1+w1, y+y1+h1), (255, 0, 0), 2)
                 vis_roi = roi[y+y1:y+y1+h1, x+x1:x+x1+w1]
