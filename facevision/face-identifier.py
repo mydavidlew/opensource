@@ -50,6 +50,7 @@ def main(args):
     data = get_encodedface()
 
     print("Streaming started")
+    print("Embedded: {}".format(data["names"]))
     video_capture = cv.VideoCapture(0)
     # loop over frames from the video file stream
     while True:

@@ -62,9 +62,10 @@ def main(args):
         # convert the input image from BGR to RGB
         rgb = cv.cvtColor(image, cv.COLOR_BGR2RGB)
         # the facial embeddings for face in input
-        boxes = fr.face_locations(rgb, model="hog") #fr.face_locations(rgb, number_of_times_to_upsample=1, model="hog")
+        boxes = fr.face_locations(rgb, model="hog")
         encodings = fr.face_encodings(rgb, boxes)
         print("Found [ {0} / {1} ] faces in".format(len(encodings), len(boxes)), imagePath)
+        print("Embedded: {}".format(data["names"]))
 
         # loop over the facial embeddings incase
         # we have multiple embeddings for multiple fcaes

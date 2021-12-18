@@ -68,7 +68,7 @@ def main(args):
                 face_image = rgb[top:bottom, left:right]
                 pil_image = Image.fromarray(face_image)
                 pil_image = pil_image.resize([200, 200])
-                pil_image.show()
+                pil_image.show(name)
 
         # finish time
         dt = clock() - t
