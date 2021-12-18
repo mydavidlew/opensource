@@ -24,7 +24,7 @@ def create_capture(source = 0):
 
 def detect(img, cascade):
     #rects = cascade.detectMultiScale(img, scaleFactor=1.3, minNeighbors=4, minSize=(30, 30), flags=cv.CASCADE_SCALE_IMAGE)
-    rects = cascade.detectMultiScale(img, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30), flags=cv.CASCADE_SCALE_IMAGE)
+    rects = cascade.detectMultiScale(img, scaleFactor=1.05, minNeighbors=3, minSize=(30, 30), flags=cv.CASCADE_SCALE_IMAGE)
     if len(rects) == 0:
         return []
     rects[:,2:] += rects[:,:2]
@@ -44,7 +44,7 @@ def main():
         video_src = 0
 
     args = dict(args)
-    cascade_fn = args.get('--cascade', "Classifier/haarcascade_frontalface_alt2.xml")
+    cascade_fn = args.get('--cascade', "Classifier/haarcascade_frontalface_alt.xml")
     nested_fn  = args.get('--nested-cascade', "Classifier/haarcascade_eye.xml")
 
     cascade = cv.CascadeClassifier(cv.samples.findFile(cascade_fn))
