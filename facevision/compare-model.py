@@ -14,6 +14,7 @@ faceCascade = cv.CascadeClassifier(cascPath2)
 video_capture = cv.VideoCapture(0)
 log.basicConfig(filename='webcam.log', level=log.INFO)
 anterior = 0
+totalfrm = 0
 while True:
     if not video_capture.isOpened():
         print('Unable to load camera.')
@@ -48,12 +49,14 @@ while True:
 
     # Display the resulting frame
     cv.imshow('Video', frame)
+    totalfrm += 1
 
     if anterior != len(faces):
         anterior = len(faces)
         log.info("faces: "+str(len(faces))+" at "+str(dt.datetime.now()))
 
-    if cv.waitKey(3) & 0xFF == ord('q'):
+    if cv.waitKey(1) & 0xFF == ord('q'):
+        print("total frames:", str(totalfrm))
         break
 
 # When everything is done, release the capture
