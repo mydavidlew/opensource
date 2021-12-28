@@ -27,14 +27,13 @@ while True:
     gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
 
     # Load the image into an array
-    #win = dlib.image_window()
+    win = dlib.image_window()
+    # Open a window on the desktop showing the image
+    win.set_image(gray)
 
     # Run the HOG face detector on the image data.
     # The result will be the bounding boxes of the faces in our image.
     detected_faces = face_detector(gray, 1)
-
-    # Open a window on the desktop showing the image
-    #win.set_image(image)
 
     # Loop through each face we found in the image
     for i, face_rect in enumerate(detected_faces):
@@ -45,7 +44,8 @@ while True:
         y2 = face_rect.bottom()  # bottom point
 
         # Draw a box around each face we found
-        #win.add_overlay(face_rect, dlib.rgb_pixel(0, 255, 0))
+        win.add_overlay(face_rect, dlib.rgb_pixel(0, 255, 0))
+        # Draw a box around each face we found
         cv.rectangle(img=image, pt1=(x1, y1), pt2=(x2, y2), color=(0, 255, 0), thickness=4)
 
         # Look for the landmarks - https://github.com/italojs/facial-landmarks-recognition/blob/master/shape_predictor_68_face_landmarks.dat
@@ -60,14 +60,16 @@ while True:
         # - Mouth Points = 48–60
         # - Lips Points = 61–67
         landmarks = face_predictor(image=gray, box=face_rect)
+        # Draw the face landmarks on the screen.
+        win.add_overlay(landmarks)
         # convert the facial landmark (x, y)-coordinates to a NumPy array
-        landmarks = face_utils.shape_to_np(landmarks)
+        nplandmarks = face_utils.shape_to_np(landmarks)
 
         # Loop through all the points
         #for n in range(0, 68):
         #    x = landmarks.part(n).x
         #    y = landmarks.part(n).y
-        for n, (x, y) in enumerate(landmarks):
+        for n, (x, y) in enumerate(nplandmarks):
             if drawpoint:
                 cv.circle(img=image, center=(x, y), radius=3, color=(0, 0, 255), thickness=-1)
             else:
