@@ -6,6 +6,7 @@ import cv2 as cv
 import cvlib as cvl
 from cvlib.object_detection import draw_bbox
 
+# https://thecleverprogrammer.com/2021/05/11/count-objects-in-image-using-python/
 parser = argparse.ArgumentParser(description='Count Objects in an Image.')
 parser.add_argument('--input', help='Path to input image.', default='Images/Random/cars.jpg')
 args = parser.parse_args()
