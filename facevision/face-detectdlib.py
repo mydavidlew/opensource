@@ -41,4 +41,5 @@ print("]")
 
 # Wait until the user hits <enter> to close the window
 dlib.hit_enter_to_continue()
+cv.destroyAllWindows()
 exit(0)

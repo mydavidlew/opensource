@@ -39,3 +39,4 @@ for i in range(1, histSize):
 cv.imshow('Source image', src)
 cv.imshow('calcHist Demo', histImage)
 cv.waitKey(0)
+cv.destroyAllWindows()
