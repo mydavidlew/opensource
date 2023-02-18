@@ -26,3 +26,4 @@ print("Number of person in this image are " + str(label.count('person')))
 
 plt.imshow(output)
 plt.show()
+cv.destroyAllWindows()
