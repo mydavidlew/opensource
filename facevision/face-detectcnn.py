@@ -3,6 +3,7 @@
 
     @author: keyur-r
     CNN (Convolutional Neural Network) based face detector available in dlib
+    https://github.com/keyurr2/face-detection
 
     To find faces in image -> python face_detection_hog_svn.py -i <input-image> -w mmod_human_face_detector.dat
     To find faces realtime -> python face_detection_hog_svn.py -w mmod_human_face_detector.dat
