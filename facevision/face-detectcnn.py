@@ -166,7 +166,7 @@ if __name__ == "__main__":
     # handle command line arguments
     ap = argparse.ArgumentParser()
     ap.add_argument('-w', '--weights', help='Path to Weights',
-                    default='./mmod_human_face_detector.dat')
+                    default='Classifier/mmod_human_face_detector.dat')
     ap.add_argument('-i', '--image', required=False, help='Path to image file',
                     default="Images/Random/EXO.jpg")
     args = ap.parse_args()
