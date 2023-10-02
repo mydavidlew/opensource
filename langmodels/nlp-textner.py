@@ -1,9 +1,18 @@
 from transformers import AutoModelForTokenClassification, AutoTokenizer
 from transformers import pipeline
 
+model1a = "dslim/bert-base-NER"; model1b = "dslim/bert-large-NER"
+model2a = "dbmdz/bert-base-cased-finetuned-conll03-english"; model2b = "dbmdz/bert-large-cased-finetuned-conll03-english"
+model3a = "allenai/tk-instruct-base-def-pos"; model3b = "allenai/tk-instruct-large-def-pos"
+model4a = "flair/pos-english-fast"; model4b = "flair/pos-english"
+
+model5 = "dbmdz/bert-large-cased-finetuned-conll03-english"
+token5 = "bert-base-cased"
+
 # Load the NER model
-model = AutoModelForTokenClassification.from_pretrained("dbmdz/bert-large-cased-finetuned-conll03-english")
-tokenizer = AutoTokenizer.from_pretrained("bert-base-cased")
+modelx = model5; tokenx = token5
+model = AutoModelForTokenClassification.from_pretrained(modelx)
+tokenizer = AutoTokenizer.from_pretrained(tokenx)
 
 # Load the NER pipeline
 ner_model = pipeline(task="ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple")
@@ -22,6 +31,7 @@ US prosecutors said the decision was "a victory for not only the rule of law, bu
 ner_results = ner_model(text)
 token_results = tokenizer(text, return_tensors="pt")
 print("ner_results:", ner_results)
+print("token_results:", token_results['input_ids'])
 #print("token_results.input_ids:", token_results['input_ids'])
 #print("token_results.token_type_ids:", token_results['token_type_ids'])
 #print("token_results.attention_mask:", token_results['attention_mask'])
