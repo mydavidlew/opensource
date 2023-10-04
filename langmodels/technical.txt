@@ -10,5 +10,7 @@ python3 -m pip install --upgrade tensorflow[and-cuda]
 python3 -m pip install torch torchvision torchaudio
 Verify the GPU: python3 -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))"
 
-Notes:
-1) One or more modprobe configuration files to disable Nouveau have been written.  For some distributions, this may be sufficient to disable Nouveau; other distributions may require modification of the initial ramdisk.  Please reboot your system and attempt NVIDIA driver installation again.  Note if you later wish to reenable Nouveau, you will need to delete these files: /usr/lib/modprobe.d/nvidia-installer-disable-nouveau.conf, /etc/modprobe.d/nvidia-installer-disable-nouveau.conf
+Notes for Tesla K40m GPU:
+1) Device-1: NVIDIA GK110BGL [Tesla K40m] vendor: Huawei driver: nouveau v: kernel bus-ID: 04:00.0
+2) wget https://us.download.nvidia.com/tesla/440.95.01/NVIDIA-Linux-x86_64-440.95.01.run
+3) One or more modprobe configuration files to disable Nouveau have been written.  For some distributions, this may be sufficient to disable Nouveau; other distributions may require modification of the initial ramdisk.  Please reboot your system and attempt NVIDIA driver installation again.  Note if you later wish to reenable Nouveau, you will need to delete these files: /usr/lib/modprobe.d/nvidia-installer-disable-nouveau.conf, /etc/modprobe.d/nvidia-installer-disable-nouveau.conf
