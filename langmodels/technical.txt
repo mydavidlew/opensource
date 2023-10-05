@@ -25,3 +25,28 @@ Notes for Tesla K40m GPU:
 3) NVidia cuDNN: https://developer.nvidia.com/rdp/cudnn-download
    wget https://developer.nvidia.com/downloads/compute/cudnn/secure/8.9.5/local_installers/12.x/cudnn-local-repo-ubuntu2204-8.9.5.29_1.0-1_amd64.deb
 4) One or more modprobe configuration files to disable Nouveau have been written.  For some distributions, this may be sufficient to disable Nouveau; other distributions may require modification of the initial ramdisk.  Please reboot your system and attempt NVIDIA driver installation again.  Note if you later wish to reenable Nouveau, you will need to delete these files: /usr/lib/modprobe.d/nvidia-installer-disable-nouveau.conf, /etc/modprobe.d/nvidia-installer-disable-nouveau.conf
+5) Updated Driver: oneadmin@smrppris-stg3-nc-05:~$ nvidia-smi
+   Wed Oct  4 18:05:14 2023       
+   +-----------------------------------------------------------------------------+
+   | NVIDIA-SMI 460.106.00   Driver Version: 460.106.00   CUDA Version: 11.2     |
+   |-------------------------------+----------------------+----------------------+
+   | GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
+   | Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
+   |                               |                      |               MIG M. |
+   |===============================+======================+======================|
+   |   0  Tesla K40m          Off  | 00000000:04:00.0 Off |                    0 |
+   | N/A   31C    P0    64W / 235W |      0MiB / 11441MiB |      0%      Default |
+   |                               |                      |                  N/A |
+   +-------------------------------+----------------------+----------------------+
+   |   1  Tesla K40m          Off  | 00000000:83:00.0 Off |                    0 |
+   | N/A   28C    P0    63W / 235W |      0MiB / 11441MiB |      1%      Default |
+   |                               |                      |                  N/A |
+   +-------------------------------+----------------------+----------------------+
+                                                                               
+   +-----------------------------------------------------------------------------+
+   | Processes:                                                                  |
+   |  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
+   |        ID   ID                                                   Usage      |
+   |=============================================================================|
+   |  No running processes found                                                 |
+   +-----------------------------------------------------------------------------+
