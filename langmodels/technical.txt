@@ -1,3 +1,6 @@
+TensorFlow - https://www.tensorflow.org/install/pip#linux
+pyTorch - https://pytorch.org/get-started/locally/
+
 [CPU]
 python3 -m pip install --upgrade tensorflow
 python3 -m pip install --upgrade tensorflow[torch]
