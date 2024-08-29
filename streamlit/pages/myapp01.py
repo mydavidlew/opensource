@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-st.set_page_config(page_title="Application #01", page_icon="📈")
-st.sidebar.title("🛡 Application #01")
+st.set_page_config(page_title="Application #01", page_icon="🌸", layout="wide")
+st.sidebar.title("🌸 Application #01")
 st.sidebar.markdown(
     """This demo illustrates a combination of plotting and animation with
 Streamlit. We're generating a bunch of random numbers in a loop for around

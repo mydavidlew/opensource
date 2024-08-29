@@ -2,8 +2,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 
-st.set_page_config(page_title="Application #02", page_icon="🌍")
-st.sidebar.title("🌍 Application #02")
+st.set_page_config(page_title="Application #02", page_icon="🌼", layout="wide")
+st.sidebar.title("🌼 Application #02")
 st.sidebar.markdown(
     """This demo shows how to use
 [`st.pydeck_chart`](https://docs.streamlit.io/develop/api-reference/charts/st.pydeck_chart)
@@ -35,7 +35,7 @@ st.subheader('Raw data')
 st.write(data)
 
 st.subheader('Number of dob')
-hist_values = np.histogram(data[DATE_COLUMN].dt.hour, bins=24, range=(0,24))[0]
+hist_values = np.histogram(data[DATE_COLUMN].dt.date, bins=24, range=(0,24))[0]
 st.bar_chart(hist_values)
 
 st.markdown('IDs')
