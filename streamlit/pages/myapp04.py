@@ -20,8 +20,7 @@ st.sidebar.markdown(
 to display geospatial data."""
 )
 
-
-os.environ["OPENAI_API_KEY"] = Application_key
+os.environ["OPENAI_API_KEY"] = "api_key"
 
 # Streamed response emulator
 def response_generator():
