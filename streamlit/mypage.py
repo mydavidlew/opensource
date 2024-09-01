@@ -1,17 +1,17 @@
 import streamlit as st
 
-def main():
-    # builds the sidebar menu
-    st.set_page_config(page_title="Hello to MyPage", page_icon="👋", layout="wide")
-    st.sidebar.title(f'👉 Homepage! 🏠')
-    st.sidebar.success("Select a task above ☝️")
-    st.sidebar.markdown(
-        """
-        Dedicated to built Machine Learning and Data Science projects.
+# builds the sidebar menu
+st.set_page_config(page_title="Hello to MyPage", page_icon="👋", layout="wide")
+st.sidebar.title(f'👉 Homepage! 👈')
+st.sidebar.success("Select a task above ☝️")
+st.sidebar.markdown(
     """
-    )
+    Dedicated to built :green[**Artificial Intelligent**] and :green[**Graph Data Science**] projects.
+"""
+)
+
+def main():
     # content of the page
-    st.write("# 🏠 Welcome to MyPages! 👋")
     st.markdown(
         """
         **Streamlit** is an open-source app framework built specifically for
@@ -33,9 +33,11 @@ def main():
 def submain():
     # builds the sidebar menu
     with st.sidebar:
-        st.page_link('mypage.py', label='Main Application Page', icon='🏠')
+        st.page_link('mypage.py', label='Main Application', icon='🏠')
         st.page_link('pages/myapp01.py', label='MyApp01 Checker', icon='🛡️')
         st.page_link('pages/myapp02.py', label='MyApp02 Checker', icon='🌍')
 
 if __name__ == '__main__':
+    st.title("🏠 Welcome to MyPages! 👋")
     main()
+    submain()

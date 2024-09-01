@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import openpyxl as xl
 import os
 
 st.set_page_config(page_title="Application #03", page_icon="🌻", layout="wide")
@@ -10,16 +11,17 @@ st.sidebar.markdown(
 to display geospatial data."""
 )
 
-# Specify the file paths
-xlsx_file_path = '/home/superadmin/Workspace/datasets/Duplicate_Patient_Demo_20240726.xlsx'  # Replace with your .xlsx file path
-csv_file_path = '/home/superadmin/Workspace/datasets/Duplicate_Patient_Demo_20240726a.csv'  # Replace with your desired .csv file path
-
 # Function to get list of worksheet in xlsx
 @st.cache_data
-def readxls(xlsx_file_path):
+def get_xlsx_sheetname(xlsx_file_path):
     with st.spinner('Scanning excel, Wait for it...'):
-        excel_file = pd.ExcelFile(xlsx_file_path)
+        excel_file = pd.ExcelFile(xlsx_file_path, engine="calamine")
     st.success("Done! --> " + xlsx_file_path.name)
+    # for sheet in excel_file.sheet_names:
+    #     ws = pd.read_excel(xlsx_file_path, sheet_name=sheet)
+    #     row_count = len(ws.index)
+    #     column_count = len(ws.columns)
+    #     st.write("sheet:", sheet, "-- row:", row_count, "-- col:", column_count)
     return excel_file.sheet_names
 
 # Function to convert xlsx to csv
@@ -39,35 +41,14 @@ def filter_distinct_values(xlsx_file_path, sheet_name=0, start_row=0, end_row=No
     distinct_values = df_range.drop_duplicates()
     return distinct_values
 
-def doconvert(xlsx_file_path, csv_file_path, sheet):
-    with st.spinner('Wait for it...'):
-        # Convert the file
-        convert_xlsx_to_csv(xlsx_file_path, csv_file_path, sheet_name=sheet)
-    st.success("Done! --> " + xlsx_file_path.name)
-
-def dofilter(xlsx_file_path):
-    # Specify the file path and the range
-    sheet_name = 0  # Replace with your sheet name or index if needed
-    start_row = 1  # Adjust these values to your desired range
-    end_row = None  # None means until the last row
-    start_col = 4  # Column index (0-based)
-    end_col = 5  # None  # None means until the last column
-    #
-    with st.spinner('Wait for it...'):
-        # Get the distinct values in the specified range
-        distinct_values = filter_distinct_values(xlsx_file_path, sheet_name, start_row, end_row, start_col, end_col)
-    st.success("Done! --> " + xlsx_file_path.name)
-    # Print or use the distinct values
-    st.write(distinct_values)
-
 def domain(xlsx_file_path, csv_file_path):
     tab01, tab02, tab03, tab04, tab05 = st.tabs(["👻 Select worksheet", "👻 Read worksheet", "👻 Convert worksheet", "👻 Filter worksheet", "👻 Other worksheet"])
     sheet = 0
     with tab01:
         #if "df" not in st.session_state:
-        #    st.session_state.df = readxls(xlsx_file_path)
+        #    st.session_state.df = get_xlsx_sheetname(xlsx_file_path)
         #items = st.dataframe(st.session_state.df, use_container_width=True, hide_index=False, on_select="rerun", selection_mode="single-row")
-        df = readxls(xlsx_file_path)
+        df = get_xlsx_sheetname(xlsx_file_path)
         items = st.dataframe(df, use_container_width=True, hide_index=False, on_select="rerun", selection_mode="single-row")
         try:
             sheet = items.selection.rows[0]
@@ -77,10 +58,12 @@ def domain(xlsx_file_path, csv_file_path):
         csv_file_path = csv_file_path + "_" + str(sheet) + ".csv"
 
     with tab02:
+        nrcds = st.slider('#of Records', min_value=0, max_value=10000, value=100, step=10)
         with st.spinner('Reading excel, Wait for it...'):
-            df = pd.read_excel(xlsx_file_path, sheet_name=sheet, header=0, nrows=100)
+            df = pd.read_excel(xlsx_file_path, sheet_name=sheet, header=0, nrows=nrcds)
         st.success("Done! --> " + xlsx_file_path.name)
-        st.table(df)
+        st.dataframe(df, use_container_width=True)
+        st.write("Total records: ", len(df.index))
 
     with tab03:
         with st.spinner("Generating file 👉 " + csv_file_path):
@@ -89,29 +72,60 @@ def domain(xlsx_file_path, csv_file_path):
         st.success("Done! --> " + xlsx_file_path.name + " ➡️➡️➡️ " + csv_file_path)
 
     with tab04:
-        st.write("d")
+        # Specify the file path and the range
+        start_row = 1  # Adjust these values to your desired range
+        end_row = None  # None means until the last row
+        start_col = 0  # Column index (0-based)
+        end_col = 1  # None  # None means until the last column
+        #
+        col1, col2, col3, col4 = st.columns([1, 1, 1, 1], gap="large", vertical_alignment="center")
+        with col1:
+            start_row = st.number_input('start_row', min_value=0, max_value=100, value=1, step=1)
+        with col2:
+            start_col = st.number_input('start_col', min_value=0, max_value=100, value=0, step=1)
+        with col3:
+            end_col = st.number_input('end_col', min_value=0, max_value=100, value=1, step=1)
+        with col4:
+            st.markdown("""
+                <style>
+                    button {
+                        padding-top: 5px !important;
+                        padding-bottom: 5px !important;
+                        text-align: center !important;
+                    }
+                </style>
+            """, unsafe_allow_html=True)
+            bt_start = st.button(r"$\textsf{\Large Start}$", use_container_width=True)
+        #
+        if bt_start:
+            with st.spinner('Filtering, Wait for it...'):
+                # Get the distinct values in the specified range
+                distinct_values = filter_distinct_values(xlsx_file_path, sheet, start_row, end_row, start_col, end_col)
+            st.success("Done! --> " + xlsx_file_path.name)
+            # Print or use the distinct values
+            st.dataframe(distinct_values, use_container_width=True)
 
     with tab05:
-        st.write("e")
+        with st.spinner('Scanning, Wait for it...'):
+            wb = xl.load_workbook(xlsx_file_path, read_only=True)
+        st.success("Done! --> " + xlsx_file_path.name)
+        sheets = wb.sheetnames
+        st.write("worksheets: ", sheets)
+        for sheet in sheets:
+            ws=wb[sheet]
+            row_count = ws.max_row
+            column_count = ws.max_column
+            st.write(f"sheet: [**{sheet}**] -- row: [**{row_count}**] -- col: [**{column_count}**]")
 
+def main():
+    uploaded_excel = st.file_uploader(":blue[**Choose a excel file**]", type=['xls','xlsx'], accept_multiple_files=False)
+    if uploaded_excel is not None:
+        basefile, extension = os.path.splitext(uploaded_excel.name)
+        downloaded_csv = "datasets/" + basefile
+        domain(uploaded_excel, downloaded_csv)
+    else:
+        st.markdown(":red[**Pls upload a excel file...**]")
 
-
-uploaded_excel = st.file_uploader(":blue[**Choose a excel file**]", type=['xls','xlsx'], accept_multiple_files=False)
-if uploaded_excel is not None:
-    basefile, extension = os.path.splitext(uploaded_excel.name)
-    downloaded_csv = "datasets/" + basefile
-    domain(uploaded_excel, downloaded_csv)
-else:
-    st.markdown(":red[**Pls upload a excel file...**]")
-
-#with st.container():
-#    if st.button("Readfile", type="primary"):
-#        doread()
-
-#with st.container():
-#    if st.button("Convert", type="primary"):
-#        doconvert()
-
-#with st.container():
-#    if st.button("DistFilter", type="primary"):
-#        dofilter()
+if __name__ == '__main__':
+    st.title("Process xls content")
+    main()
