@@ -6,9 +6,9 @@ import os
 st.set_page_config(page_title="Application #03", page_icon="🌻", layout="wide")
 st.sidebar.title("🌻 Application #03")
 st.sidebar.markdown(
-    """This demo shows how to use
-[`st.pydeck_chart`](https://docs.streamlit.io/develop/api-reference/charts/st.pydeck_chart)
-to display geospatial data."""
+    """This demo illustrates a combination of geospatial data visualisation, plotting and animation with 
+    [**Streamlit**](https://docs.streamlit.io/develop/api-reference). We're generating a bunch of random numbers 
+    in a loop for around 5 seconds. Enjoy!"""
 )
 
 # Function to get list of worksheet in xlsx
@@ -120,6 +120,7 @@ def domain(xlsx_file_path, csv_file_path):
 def main():
     uploaded_excel = st.file_uploader(":blue[**Choose a excel file**]", type=['xls','xlsx'], accept_multiple_files=False)
     if uploaded_excel is not None:
+        #st.write(uploaded_excel)
         basefile, extension = os.path.splitext(uploaded_excel.name)
         downloaded_csv = "datasets/" + basefile
         domain(uploaded_excel, downloaded_csv)

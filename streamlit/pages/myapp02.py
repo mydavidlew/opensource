@@ -5,9 +5,9 @@ import numpy as np
 st.set_page_config(page_title="Application #02", page_icon="🌼", layout="wide")
 st.sidebar.title("🌼 Application #02")
 st.sidebar.markdown(
-    """This demo shows how to use
-[`st.pydeck_chart`](https://docs.streamlit.io/develop/api-reference/charts/st.pydeck_chart)
-to display geospatial data."""
+    """This demo illustrates a combination of geospatial data visualisation, plotting and animation with 
+    [**Streamlit**](https://docs.streamlit.io/develop/api-reference). We're generating a bunch of random numbers 
+    in a loop for around 5 seconds. Enjoy!"""
 )
 
 DATE_COLUMN = 'dob'
