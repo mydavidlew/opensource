@@ -14,6 +14,7 @@ from haystack.components.builders import PromptBuilder
 from haystack.components.preprocessors import DocumentSplitter
 from haystack.components.generators import OpenAIGenerator, HuggingFaceLocalGenerator
 from haystack.components.writers import DocumentWriter
+from haystack.document_stores.types import DuplicatePolicy
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 from tensorflow.python.ops.summary_ops_v2 import write
 from tensorflow.tools.docs.doc_controls import header
@@ -78,8 +79,8 @@ def prompt_syntax():
 
 
     """
-    prompt_builder = PromptBuilder(template=prompt_template)
-    return prompt_template, prompt_builder
+    #prompt_builder = PromptBuilder(template=prompt_template)
+    return prompt_template
 
 def index_xpipeline(document_store):
     # Building the Index Pipeline
@@ -99,7 +100,7 @@ def index_xpipeline(document_store):
     indexing_pipeline = Pipeline()
     indexing_pipeline.add_component("splitter", DocumentSplitter(split_by="word", split_length=200, split_overlap=0))
     indexing_pipeline.add_component("embedder", SentenceTransformersDocumentEmbedder(model=embedder_model1, device=device_model1))
-    indexing_pipeline.add_component("writer", DocumentWriter(document_store=document_store))
+    indexing_pipeline.add_component("writer", DocumentWriter(document_store=document_store, policy=DuplicatePolicy.OVERWRITE))
     # connect the components
     indexing_pipeline.connect("splitter", "embedder")
     indexing_pipeline.connect("embedder", "writer")
@@ -138,7 +139,7 @@ def test_chatbot():
     # In memory document store
     document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
     # Define a Template Prompt
-    prompt_template, prompt_builder = prompt_syntax()
+    prompt_template = prompt_syntax()
     #
     content_data = [Document(content="My name is Wolfgang and I live in Berlin"),
                     Document(content="I saw a black horse running"),
