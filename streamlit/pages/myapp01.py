@@ -10,12 +10,14 @@ from haystack.components.fetchers import LinkContentFetcher
 from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
 from haystack.components.converters import HTMLToDocument, TextFileToDocument
 from haystack.components.embedders import SentenceTransformersTextEmbedder, SentenceTransformersDocumentEmbedder
+from haystack.components.joiners import DocumentJoiner
 from haystack.components.builders import PromptBuilder
-from haystack.components.preprocessors import DocumentSplitter
+from haystack.components.preprocessors import DocumentSplitter, DocumentCleaner
 from haystack.components.generators import OpenAIGenerator, HuggingFaceLocalGenerator
 from haystack.components.writers import DocumentWriter
 from haystack.document_stores.types import DuplicatePolicy
 from haystack.document_stores.in_memory import InMemoryDocumentStore
+from mpmath.libmp import to_int
 from tensorflow.python.ops.summary_ops_v2 import write
 from tensorflow.tools.docs.doc_controls import header
 
@@ -33,6 +35,14 @@ dlwritetoken_key = "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"
 
 if "HF_API_TOKEN" not in os.environ:
     os.environ["HF_API_TOKEN"] = dlreadtoken_key
+
+# Embedder model used
+embedder_model0 = "Snowflake/snowflake-arctic-embed-l"  # good embedding model: https://huggingface.co/Snowflake/snowflake-arctic-embed-l
+embedder_model1 = "sentence-transformers/multi-qa-mpnet-base-dot-v1"
+embedder_model2 = "sentence-transformers/all-MiniLM-L6-v2"
+device_model0 = ComponentDevice.from_str("cuda:0")  # load the model on GPU
+device_model1 = None
+
 
 def upload_files():
     # Fetch the Text Data
@@ -65,10 +75,8 @@ def prompt_syntax():
     prompt_template = """
     <|begin_of_text|><|start_header_id|>user<|end_header_id|>
 
-
     Using the information contained in the context, give a comprehensive answer to the question.
     If the answer cannot be deduced from the context, do not give an answer.
-
     Context:
       {% for doc in documents %}
       {{ doc.content }} URL:{{ doc.meta['url'] }}
@@ -77,46 +85,29 @@ def prompt_syntax():
 
     <|start_header_id|>assistant<|end_header_id|>
 
-
     """
     #prompt_builder = PromptBuilder(template=prompt_template)
     return prompt_template
 
 def index_xpipeline(document_store):
     # Building the Index Pipeline
-    # Embedder model used
-    ##embedder_model0 = "Snowflake/snowflake-arctic-embed-l"  # good embedding model: https://huggingface.co/Snowflake/snowflake-arctic-embed-l
-    ##device_model0 = ComponentDevice.from_str("cuda:0")  # load the model on GPU
-    embedder_model1 = "Snowflake/snowflake-arctic-embed-l" # "sentence-transformers/all-MiniLM-L6-v2"
-    device_model1 = None
-    #
-    # 🚅 Components
-    # - splitter: DocumentSplitter
-    # - embedder: SentenceTransformersDocumentEmbedder
-    # - writer: DocumentWriter
-    # 🛤️ Connections
-    # - splitter.documents -> embedder.documents(List[Document])
-    # - embedder.documents -> writer.documents(List[Document])
     indexing_pipeline = Pipeline()
-    indexing_pipeline.add_component("splitter", DocumentSplitter(split_by="word", split_length=200, split_overlap=0))
-    indexing_pipeline.add_component("embedder", SentenceTransformersDocumentEmbedder(model=embedder_model1, device=device_model1))
-    indexing_pipeline.add_component("writer", DocumentWriter(document_store=document_store, policy=DuplicatePolicy.OVERWRITE))
+    indexing_pipeline.add_component(name="joiner", instance=DocumentJoiner())
+    indexing_pipeline.add_component(name="cleaner", instance=DocumentCleaner())
+    indexing_pipeline.add_component(name="splitter", instance=DocumentSplitter(split_by="word", split_length=200, split_overlap=50))
+    indexing_pipeline.add_component(name="embedder", instance=SentenceTransformersDocumentEmbedder(model=embedder_model1, device=device_model1, progress_bar=True))
+    indexing_pipeline.add_component(name="writer", instance=DocumentWriter(document_store=document_store, policy=DuplicatePolicy.SKIP))
     # connect the components
-    indexing_pipeline.connect("splitter", "embedder")
-    indexing_pipeline.connect("embedder", "writer")
+    indexing_pipeline.connect("joiner.documents", "cleaner.documents")
+    indexing_pipeline.connect("cleaner.documents", "splitter.documents")
+    indexing_pipeline.connect("splitter.documents", "embedder.documents")
+    indexing_pipeline.connect("embedder.documents", "writer.documents")
     return indexing_pipeline
 
 def query_xpipeline(document_store, prompt_template, generator):
     # Build the Query Pipeline
-    # Embedder model used
-    ##embedder_model0 = "Snowflake/snowflake-arctic-embed-l" # good embedding model: https://huggingface.co/Snowflake/snowflake-arctic-embed-l
-    ##device_model0 = ComponentDevice.from_str("cuda:0") # load the model on GPU
-    embedder_model1 = "Snowflake/snowflake-arctic-embed-l" # "sentence-transformers/all-MiniLM-L6-v2"
-    device_model1 = None
-    #
     query_pipeline = Pipeline()
-    query_pipeline.add_component("text_embedder", SentenceTransformersTextEmbedder(model=embedder_model1, device=device_model1,
-                                prefix="Represent this sentence for searching relevant passages: "))  # as explained in the model card (https://huggingface.co/Snowflake/snowflake-arctic-embed-l#using-huggingface-transformers), queries should be prefixed
+    query_pipeline.add_component("text_embedder", SentenceTransformersTextEmbedder(model=embedder_model1, device=device_model1, progress_bar=True))
     query_pipeline.add_component("retriever", InMemoryEmbeddingRetriever(document_store=document_store, top_k=5))
     query_pipeline.add_component("prompt_builder", PromptBuilder(template=prompt_template))
     query_pipeline.add_component("generator", generator)
@@ -130,8 +121,10 @@ def get_generative_answer(query_pipeline, query):
     # Let's ask some questions!
     results = query_pipeline.run({
         "text_embedder": {"text": query},
-        "prompt_builder": {"query": query}
+        "prompt_builder": {"query": query},
+        "generator": {"generation_kwargs": {"max_new_tokens": 500}}
         })
+    print(results)
     answer = results["generator"]["replies"][0]
     return answer
 
@@ -147,7 +140,7 @@ def test_chatbot():
     #
     # Building the Index Pipeline
     indexing_pipeline = index_xpipeline(document_store)
-    indexing_pipeline.run(data={"splitter": {"documents": content_data}})
+    indexing_pipeline.run(data={"joiner": {"documents": content_data}})
     #
     # Initialize a Generator
     # generator = HuggingFaceLocalGenerator(
@@ -162,12 +155,13 @@ def test_chatbot():
         model="HuggingFaceTB/SmolLM-1.7B-Instruct",
         huggingface_pipeline_kwargs={"device_map": "auto",
                                      "model_kwargs": {}},
-        generation_kwargs={"max_new_tokens": 500})
+        generation_kwargs={"max_new_tokens": 500, "do_sample": True})
     # Start the Generator
     generator.warm_up()
     #
     # Build the Query Pipeline
     querying_pipeline = query_xpipeline(document_store, prompt_template, generator)
+    #
     if "messages" not in st.session_state:
         st.session_state.messages = []
 
@@ -177,9 +171,15 @@ def test_chatbot():
     #
     if prompt := st.chat_input("What is up?"):
         with st.chat_message("user"):
+            # Truncate the query (necessary if using api embedder since system has no GPU)
+            words = prompt.split()
+            truncated_words = words[:4000]
+            prompt = ' '.join(truncated_words)
             st.session_state.messages.append({"role": "user", "content": prompt})
             st.markdown(prompt)
         with st.chat_message("assistant"):
+            most_accurate_score = 0
+            score = 0
             try:
                 response = get_generative_answer(querying_pipeline, prompt)
                 st.session_state.messages.append({"role": "assistant", "content": response})
@@ -191,48 +191,50 @@ def rag_chatbot():
     # Fetch the Text Data
     content_data = upload_files()
     if content_data:
-        #st.write(content_data)
+        st.write(content_data)
         #
         # In memory document store
         document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
         # Define a Template Prompt
-        prompt_template, prompt_builder = prompt_syntax()
+        prompt_template = prompt_syntax()
         #
         # Building the Index Pipeline
         indexing_pipeline = index_xpipeline(document_store)
-        indexing_pipeline.run(data={"splitter": {"documents": content_data}})
+        indexing_pipeline.run(data={"joiner": {"documents": content_data}})
         #
         # Initialize a Generator
         #generator = HuggingFaceLocalGenerator(
-        #    model="meta-llama/Meta-Llama-3.1-8B-Instruct",
-        #    huggingface_pipeline_kwargs={"device_map": "auto",
-        #                                 "model_kwargs": {"load_in_4bit": True,
-        #                                                  "bnb_4bit_use_double_quant": True,
-        #                                                  "bnb_4bit_quant_type": "nf4",
-        #                                                  "bnb_4bit_compute_dtype": torch.bfloat16}},
-        #    generation_kwargs={"max_new_tokens": 500})
-        generator = HuggingFaceLocalGenerator(
-            model="HuggingFaceTB/SmolLM-1.7B-Instruct",
-            huggingface_pipeline_kwargs={"device_map": "auto",
-                                         "model_kwargs": {}},
-            generation_kwargs={"max_new_tokens": 500})
+        #                                   model="meta-llama/Meta-Llama-3.1-8B-Instruct",
+        #                                    huggingface_pipeline_kwargs={"device_map": "auto",
+        #                                                                   "model_kwargs": {"load_in_4bit": True,
+        #                                                                                   "bnb_4bit_use_double_quant": True,
+        #                                                                                   "bnb_4bit_quant_type": "nf4",
+        #                                                                                   "bnb_4bit_compute_dtype": torch.bfloat16}},
+        #                                   generation_kwargs={"max_new_tokens": 500})
+        generator = HuggingFaceLocalGenerator(model="HuggingFaceTB/SmolLM-1.7B-Instruct",
+                                              huggingface_pipeline_kwargs={"device_map": "auto", "model_kwargs": {}},
+                                              generation_kwargs={"max_new_tokens": 500, "do_sample": True})
         # Start the Generator
         generator.warm_up()
         #
         # Build the Query Pipeline
         querying_pipeline = query_xpipeline(document_store, prompt_template, generator)
         #
-        if "messages" not in st.session_state:
-            st.session_state.messages = []
+#        if "messages" not in st.session_state:
+#            st.session_state.messages = []
 
-        for message in st.session_state.messages:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+#        for message in st.session_state.messages:
+#            with st.chat_message(message["role"]):
+#                st.markdown(message["content"])
         #
         if prompt := st.chat_input("What is up?"):
             with st.chat_message("user"):
-                st.session_state.messages.append({"role": "user", "content": prompt})
-                st.markdown(prompt)
+                # Truncate the query (necessary if using api embedder since system has no GPU)
+                words = prompt.split()
+                truncated_words = words[:4000]
+                prompt = ' '.join(truncated_words)
+#                st.session_state.messages.append({"role": "user", "content": prompt})
+                st.write(prompt)
             # get_generative_answer("Who won the Best Picture Award in 2024?")
             # get_generative_answer("What was the box office performance of the Best Picture nominees?")
             # get_generative_answer("What was the reception of the ceremony")
@@ -242,13 +244,13 @@ def rag_chatbot():
             with st.chat_message("assistant"):
                 try:
                     response = get_generative_answer(querying_pipeline, prompt)
-                    st.session_state.messages.append({"role": "assistant", "content": response})
+#                    st.session_state.messages.append({"role": "assistant", "content": response})
                     st.write(response)
                 except Exception as e:
                     st.write(f"Error: :red[**{e}**]")
 
 def main():
-    test_chatbot()
+    rag_chatbot()
 
 if __name__ == '__main__':
     st.title("Hello world")
