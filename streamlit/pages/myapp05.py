@@ -39,7 +39,7 @@ if "HF_API_TOKEN" not in os.environ:
 
 filelist = ["datasets/Malaysia_Corruption_Reports.txt", "datasets/Malaysia_Corruption_1MDB.txt"]
 filename = "datasets/Malaysia_Corruption_Reports.txt"
-filehandler = open(filename, "r")
+filehandler = open(filename, "r", encoding="utf-8")
 dataset = filehandler.read()
 filehandler.close()
 
