@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 from datasets import load_dataset
 from haystack import Pipeline, Document
+from haystack.utils import Secret
 from haystack.utils import ComponentDevice
 from haystack.components.fetchers import LinkContentFetcher
 from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
@@ -30,6 +31,8 @@ st.sidebar.markdown(
     in a loop for around 5 seconds. Enjoy!"""
 )
 
+# OpenAI
+openai_key = "sk-pr"+"oj-tOlDkDvCjXIfDZeoOJJJT3BlbkFJdSyAfPKCBrK7u9d7wlM8"
 # HuggingFace
 dlreadtoken_key = "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"
 dlwritetoken_key = "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"
@@ -68,22 +71,22 @@ indexing_pipeline = Pipeline()
 #indexing_pipeline.add_component(name="file_type_router", instance=FileTypeRouter(mime_types=["text/plain", "text/markdown", "application/pdf"]))
 indexing_pipeline.add_component(name="plain_converter", instance=TextFileToDocument(encoding="utf-8"))
 #indexing_pipeline.add_component(name="markdown_converter", instance=MarkdownToDocument())
-#indexing_pipeline.add_component(name="pdf_converter", instance=PyPDFToDocument())
+#indexing_pipeline.add_component(name="pypdf_converter", instance=PyPDFToDocument())
 indexing_pipeline.add_component(name="joiner", instance=DocumentJoiner())
 indexing_pipeline.add_component(name="cleaner", instance=DocumentCleaner())
 indexing_pipeline.add_component(name="splitter", instance=DocumentSplitter(split_by="word", split_length=200, split_overlap=50))
 indexing_pipeline.add_component(name="embedder", instance=SentenceTransformersDocumentEmbedder(model=model, progress_bar=True))
 indexing_pipeline.add_component(name="writer", instance=DocumentWriter(document_store=document_store, policy=DuplicatePolicy.SKIP))
-#indexing_pipeline.connect("file_type_router.text/plain", "ptext_converter.sources")
+#indexing_pipeline.connect("file_type_router.text/plain", "plain_converter.sources")
 #indexing_pipeline.connect("file_type_router.text/markdown", "markdown_converter.sources")
-#indexing_pipeline.connect("file_type_router.application/pdf", "pdf_converter.sources")
-indexing_pipeline.connect("plain_converter.documents", "joiner.documents")
-#indexing_pipeline.connect("markdown_converter.documents", "joiner.documents")
-#indexing_pipeline.connect("pdf_converter.documents", "joiner.documents")
-indexing_pipeline.connect("joiner.documents", "cleaner.documents")
-indexing_pipeline.connect("cleaner.documents", "splitter.documents")
-indexing_pipeline.connect("splitter.documents", "embedder.documents")
-indexing_pipeline.connect("embedder.documents", "writer.documents")
+#indexing_pipeline.connect("file_type_router.application/pdf", "pypdf_converter.sources")
+indexing_pipeline.connect("plain_converter", "joiner")
+#indexing_pipeline.connect("markdown_converter", "joiner")
+#indexing_pipeline.connect("pypdf_converter", "joiner")
+indexing_pipeline.connect("joiner", "cleaner")
+indexing_pipeline.connect("cleaner", "splitter")
+indexing_pipeline.connect("splitter", "embedder")
+indexing_pipeline.connect("embedder", "writer")
 
 #indexing_pipeline.run({"file_type_router": {"sources": list(Path(output_dir).glob("**/*"))}})
 indexing_pipeline.run({"plain_converter": {"sources": filelist}})
@@ -92,7 +95,7 @@ indexing_pipeline.run({"plain_converter": {"sources": filelist}})
 
 reader_answer = ExtractiveReader(no_answer=False)
 reader_answer.warm_up()
-#generator = OpenAIGenerator()
+#generator = OpenAIGenerator(model="gpt-4o", api_key=Secret.from_token(openai_key))
 generator = HuggingFaceLocalGenerator(
         model="HuggingFaceTB/SmolLM-1.7B-Instruct",
         huggingface_pipeline_kwargs={"device_map": "auto",
@@ -105,22 +108,32 @@ retriever_store = InMemoryEmbeddingRetriever(document_store=document_store, top_
 querying_pipeline = Pipeline()
 querying_pipeline.add_component(name="embedder", instance=SentenceTransformersTextEmbedder(model=model, progress_bar=True))
 querying_pipeline.add_component(name="retriever", instance=retriever_store)
-querying_pipeline.add_component(name="reader", instance=reader_answer)
 querying_pipeline.add_component(name="prompt_builder", instance=prompt_builder)
+querying_pipeline.add_component(name="reader", instance=reader_answer)
 querying_pipeline.add_component(name="generator", instance=generator)
 querying_pipeline.connect("embedder.embedding", "retriever.query_embedding")
-querying_pipeline.connect("retriever.documents", "reader.documents")
-querying_pipeline.connect("retriever.documents", "prompt_builder.documents")
+querying_pipeline.connect("retriever", "prompt_builder")
+querying_pipeline.connect("retriever", "reader")
 querying_pipeline.connect("prompt_builder", "generator")
 
+need_reader = True
 
 query = "What are the corruption cases in Malaysia?"
-answer = querying_pipeline.run(data={"embedder": {"text": query},
-                                     "retriever": {"top_k": 5},
-                                     "reader": {"query": query, "top_k": 3},
-                                     "generator": {"generation_kwargs": {"max_new_tokens": 500}}})
-st.write(f":red[**a1->**]", answer)
-st.write(f":red[**a2->**]", answer["reader"]["answers"][0])
-st.write(f":red[**a3->**] :blue[score=]", answer["reader"]["answers"][0].score, f":blue[, data=]", answer["reader"]["answers"][0].data)
-st.write(f":red[**a4->**]", answer["generator"]["replies"][0])
-st.write(f":red[**b1->**]", reader_answer)
+# Truncate the query (necessary if using api embedder since SPRM server has no GPU)
+words = query.split()
+truncated_words = words[:4000]
+query = ' '.join(truncated_words)
+
+data = {"embedder": {"text": query},
+        "retriever": {"top_k": 5},
+        "prompt_builder": {"query": query},
+        "generator": {"generation_kwargs": {"max_new_tokens": 500}}}
+if need_reader: data["reader"] = {"query": query, "top_k": 3}
+answer = querying_pipeline.run(data=data,
+                               include_outputs_from = {"retriever"} if need_reader == False else {"retriever", "reader"} )
+
+st.write(":red[**a1->**]", answer)
+st.write(":red[**a2->**]", answer["reader"]["answers"][0])
+st.write(":red[**a3->**] :blue[score=]", answer["reader"]["answers"][0].score, ":blue[, data=]", answer["reader"]["answers"][0].data)
+st.write(":red[**a4->**]", answer["generator"]["replies"][0])
+st.write(":red[**b1->**]", reader_answer)

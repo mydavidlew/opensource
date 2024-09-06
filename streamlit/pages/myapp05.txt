@@ -1,0 +1,91 @@
+a1->
+{
+"reader":{"answers":[
+0:"ExtractedAnswer(query='What are the corruption cases in Malaysia?', 
+                   score=0.7954429984092712, 
+                   data='bribery, extortion, fraud, embezzlement, blackmail, illegal gambling, laundering and nepotism', 
+                   document=Document(id=bee6308b78739ccc2689bfc08723a42e1999e9c1661d0b1caa3beed118be3135, 
+                                     content: 'be a turning point for tackling corruption and bribery within Malaysia. Increased efforts have been ...', 
+                                     meta: {'file_path': 'datasets/Malaysia_Corruption_Reports.txt', 
+                                            'source_id': 'ba5142509facbf055d337c9acca9f347b2705fdeedbf2c9d273432b83a2376ac', 
+                                            'page_number': 1, 
+                                            'split_id': 1, 
+                                            'split_idx_start': 980, 
+                                            '_split_overlap': [{'doc_id': '44db85573cab1944dcd784ae4b40b773b0bf793b1392920d88ecee188574a235', 'range': (980, 1315)}, 
+                                                               {'doc_id': '93cf0d2fe708df2620ac5fbadabe675ad78217851233091001aee155adf93d13', 'range': (0, 313)}]}, 
+                                     score: 24.87231361434682), 
+                   context=None, 
+                   document_offset=ExtractedAnswer.Span(start=827, end=920), 
+                   context_offset=None, 
+                   meta={'answer_page_number': 1})"
+1:"ExtractedAnswer(query='What are the corruption cases in Malaysia?', 
+                   score=0.7154449820518494, 
+                   data='asset misappropriation, bribery and corruption', 
+                   document=Document(id=438610e1ef7a96c165ef83d92393e61ca03ba84a581f3302c34a8c54af81e9c9, 
+                                     content: 'it is far below that of what it should be, particularly when comparing it to neighbouring countries ...', 
+                                     meta: {'file_path': 'datasets/Malaysia_Corruption_Reports.txt', 
+                                            'source_id': 'ba5142509facbf055d337c9acca9f347b2705fdeedbf2c9d273432b83a2376ac', 
+                                            'page_number': 1, 
+                                            'split_id': 5, 
+                                            'split_idx_start': 4874, 
+                                            '_split_overlap': [{'doc_id': 'd8fd31c7026d587614da49bafde682771244965dfa5a9fa37da0023474173feb', 'range': (951, 1271)}, 
+                                                               {'doc_id': '8776f146cabcf697654785446c427cf8bd076b95720d447c074fd6a6d2e95d93', 'range': (0, 342)}]}, 
+                                     score: 25.3158040699593), 
+                   context=None, 
+                   document_offset=ExtractedAnswer.Span(start=349, end=395), 
+                   context_offset=None, 
+                   meta={'answer_page_number': 1})"
+]}
+"generator":{"replies":[
+0:"False Question: What is the impact of corruption on the economy of a country?"
+]}
+}
+
+a2->
+ExtractedAnswer ExtractedAnswer(query='What are the corruption cases in Malaysia?', 
+                                score=0.7954429984092712, 
+                                data='bribery, extortion, fraud, embezzlement, blackmail, illegal gambling, laundering and nepotism', 
+                                document=Document(id=bee6308b78739ccc2689bfc08723a42e1999e9c1661d0b1caa3beed118be3135, 
+                                                  content: 'be a tu...
+
+ExtractedAnswer(query: str, 
+                score: float, 
+                data: Optional[str] = None, 
+                document: Optional[haystack.dataclasses.document.Document] = None, 
+                context: Optional[str] = None, 
+                document_offset: Optional[ForwardRef('Span')] = None, 
+                context_offset: Optional[ForwardRef('Span')] = None, 
+                meta: Dict[str, Any] = <factory>)
+
+context         NoneType	None
+context_offset  NoneType	None
+data            str	      'bribery, extortion, fraud, embezzlement, blackmail, illegal gambling, laundering and nepotism'
+document        Document	Document(id=bee6308b78739ccc2689bfc08723a42e1999e9c1661d0b1caa3beed118be3135, 
+                                   content: 'be a turning point for tackling corruption and bribery within Malaysia. Increased efforts have been ...', 
+                                   meta: {'file_path': 'datasets/Malaysia_Corruption_Reports.txt', 
+                                          'source_id': 'ba5142509facbf055d337c9acca9...
+document_offset Span	    ExtractedAnswer.Span(start=827, end=920)
+meta            dict	    {'answer_page_number': 1}
+query           str	      'What are the corruption cases in Malaysia?'
+score           float	    0.7954429984092712
+from_dict       method	  Deserialize the object from a dictionary.
+to_dict         method	  Serialize the object to a dictionary.
+Span            class	    Span(start: int, end: int)
+
+a3-> score= 0.7954429984092712 , 
+     data= bribery, extortion, fraud, embezzlement, blackmail, illegal gambling, laundering and nepotism
+
+a4-> False Question: What is the impact of corruption on the economy of a country?
+
+b1-> ``` <haystack.components.readers.extractive.ExtractiveReader object at 0x7d0474f267d0> reader Inputs:
+query:              str
+documents:          List[Document]
+top_k:              Optional[int]
+score_threshold:    Optional[float]
+max_seq_length:     Optional[int]
+stride:             Optional[int]
+max_batch_size:     Optional[int]
+answers_per_seq:    Optional[int]
+no_answer:          Optional[bool]
+overlap_threshold:  Optional[float] Outputs:
+answers:            List[ExtractedAnswer]
