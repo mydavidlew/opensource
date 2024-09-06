@@ -39,8 +39,8 @@ if "HF_API_TOKEN" not in os.environ:
 
 filelist = ["datasets/Malaysia_Corruption_Reports.txt", "datasets/Malaysia_Corruption_1MDB.txt"]
 filename = "datasets/Malaysia_Corruption_Reports.txt"
-filehandler = open(filename, "r", encoding="utf-8")
-dataset = filehandler.read()
+with open(filename, "r", encoding="utf-8") as filehandler:
+    dataset = filehandler.read()
 filehandler.close()
 
 #dataset = load_dataset("text", data_files=filename, split="train")
@@ -117,10 +117,10 @@ querying_pipeline.connect("prompt_builder", "generator")
 query = "What are the corruption cases in Malaysia?"
 answer = querying_pipeline.run(data={"embedder": {"text": query},
                                      "retriever": {"top_k": 5},
-                                     "reader": {"query": query, "top_k": 1},
+                                     "reader": {"query": query, "top_k": 3},
                                      "generator": {"generation_kwargs": {"max_new_tokens": 500}}})
-st.write("a1->", answer)
-st.write("a2->", answer["reader"]["answers"][0])
-st.write("a3->", answer["reader"]["answers"][0].score, " : ", answer["reader"]["answers"][0].data)
-st.write("a4->", answer["generator"]["replies"][0])
-st.write("b1->", reader_answer)
+st.write(f":red[**a1->**]", answer)
+st.write(f":red[**a2->**]", answer["reader"]["answers"][0])
+st.write(f":red[**a3->**] :blue[score=]", answer["reader"]["answers"][0].score, f":blue[, data=]", answer["reader"]["answers"][0].data)
+st.write(f":red[**a4->**]", answer["generator"]["replies"][0])
+st.write(f":red[**b1->**]", reader_answer)
