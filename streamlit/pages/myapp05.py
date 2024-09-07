@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import os
+import os, logging
 
 from pathlib import Path
 from datasets import load_dataset
@@ -31,6 +31,9 @@ st.sidebar.markdown(
     in a loop for around 5 seconds. Enjoy!"""
 )
 
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
+
 # OpenAI
 openai_key = "sk-pr"+"oj-tOlDkDvCjXIfDZeoOJJJT3BlbkFJdSyAfPKCBrK7u9d7wlM8"
 # HuggingFace
@@ -40,31 +43,44 @@ dlwritetoken_key = "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"
 if "HF_API_TOKEN" not in os.environ:
     os.environ["HF_API_TOKEN"] = dlreadtoken_key
 
-filelist = ["datasets/Malaysia_Corruption_Reports.txt", "datasets/Malaysia_Corruption_1MDB.txt"]
+# All filename in a specific folder
+foldername = "datasets/"
+filefolder = list(Path(foldername).glob("**/*"))
+logging.info(f"[ai] filefolder information: {filefolder}")
+
+# Array list of filelist = ["file1.txt", "file2.txt", "file3.txt"]
+filelist1 = ["datasets/Malaysia_Corruption_Reports.txt", "datasets/Malaysia_Corruption_1MDB.txt"]
+filelist2 = ["datasets/Project_Gutenberg_LeoDaVin.txt"]
+filelist = filelist1
+logging.info(f"[ai] filelist information: {filelist}")
+
+# Get the data from a specific file only
 filename = "datasets/Malaysia_Corruption_Reports.txt"
 with open(filename, "r", encoding="utf-8") as filehandler:
     dataset = filehandler.read()
 filehandler.close()
-
 #dataset = load_dataset("text", data_files=filename, split="train")
-
 documents = [Document(content=dataset, meta={"name": filename})]
+logging.info(f"[ai] documents information: {documents}")
 
+# Default sample from public datasets
 #dataset = load_dataset("bilgeyucel/seven-wonders", split="train")
 #documents = [Document(content=doc["content"], meta=doc["meta"]) for doc in dataset]
 
-st.write(dataset)
+st.write(f":green[dataset:] {documents[0].meta['name']}")
 
 template = """Given these documents, answer the question.
-              Documents:
-              {% for doc in documents %}
-                  {{ doc.content }}
-              {% endfor %}
-              Question: {{query}}
-              Answer:"""
+    {% for doc in documents %}
+    Document: {{ loop.index }} - file: {{ doc.meta['file_path'] }}
+    {{ doc.content }}
+    {% endfor %}
+    Question: {{query}}
+    Answer: """
 prompt_builder = PromptBuilder(template=template)
 
-model = "sentence-transformers/multi-qa-mpnet-base-dot-v1"
+model_embedder = "sentence-transformers/all-mpnet-base-v2" # better & larger model than below
+#model_embedder = "sentence-transformers/multi-qa-mpnet-base-dot-v1"
+model_generator = "HuggingFaceTB/SmolLM-1.7B-Instruct"
 
 document_store = InMemoryDocumentStore()
 indexing_pipeline = Pipeline()
@@ -75,7 +91,7 @@ indexing_pipeline.add_component(name="plain_converter", instance=TextFileToDocum
 indexing_pipeline.add_component(name="joiner", instance=DocumentJoiner())
 indexing_pipeline.add_component(name="cleaner", instance=DocumentCleaner())
 indexing_pipeline.add_component(name="splitter", instance=DocumentSplitter(split_by="word", split_length=200, split_overlap=50))
-indexing_pipeline.add_component(name="embedder", instance=SentenceTransformersDocumentEmbedder(model=model, progress_bar=True))
+indexing_pipeline.add_component(name="embedder", instance=SentenceTransformersDocumentEmbedder(model=model_embedder, progress_bar=True))
 indexing_pipeline.add_component(name="writer", instance=DocumentWriter(document_store=document_store, policy=DuplicatePolicy.SKIP))
 #indexing_pipeline.connect("file_type_router.text/plain", "plain_converter.sources")
 #indexing_pipeline.connect("file_type_router.text/markdown", "markdown_converter.sources")
@@ -92,12 +108,12 @@ indexing_pipeline.connect("embedder", "writer")
 indexing_pipeline.run({"plain_converter": {"sources": filelist}})
 #indexing_pipeline.run(data={"joiner": {"documents": documents}})
 
-
 reader_answer = ExtractiveReader(no_answer=False)
 reader_answer.warm_up()
 #generator = OpenAIGenerator(model="gpt-4o", api_key=Secret.from_token(openai_key))
 generator = HuggingFaceLocalGenerator(
-        model="HuggingFaceTB/SmolLM-1.7B-Instruct",
+        model=model_generator,
+        task="text-generation",
         huggingface_pipeline_kwargs={"device_map": "auto",
                                      "model_kwargs": {}},
         generation_kwargs={"max_new_tokens": 1000, "do_sample": True})
@@ -106,7 +122,7 @@ generator.warm_up()
 
 retriever_store = InMemoryEmbeddingRetriever(document_store=document_store, top_k=10)
 querying_pipeline = Pipeline()
-querying_pipeline.add_component(name="embedder", instance=SentenceTransformersTextEmbedder(model=model, progress_bar=True))
+querying_pipeline.add_component(name="embedder", instance=SentenceTransformersTextEmbedder(model=model_embedder, progress_bar=True))
 querying_pipeline.add_component(name="retriever", instance=retriever_store)
 querying_pipeline.add_component(name="prompt_builder", instance=prompt_builder)
 querying_pipeline.add_component(name="reader", instance=reader_answer)
@@ -116,9 +132,10 @@ querying_pipeline.connect("retriever", "prompt_builder")
 querying_pipeline.connect("retriever", "reader")
 querying_pipeline.connect("prompt_builder", "generator")
 
-need_reader = True
 
-query = "What are the corruption cases in Malaysia?"
+query1 = "What are the corruption cases in Malaysia?"
+query2 = "Who was Pliny the Elder?"
+query = query1
 # Truncate the query (necessary if using api embedder since SPRM server has no GPU)
 words = query.split()
 truncated_words = words[:4000]
@@ -127,10 +144,11 @@ query = ' '.join(truncated_words)
 data = {"embedder": {"text": query},
         "retriever": {"top_k": 5},
         "prompt_builder": {"query": query},
+        "reader": {"query": query, "top_k": 3},
         "generator": {"generation_kwargs": {"max_new_tokens": 500}}}
-if need_reader: data["reader"] = {"query": query, "top_k": 3}
+#data["reader"] = {"query": query, "top_k": 3}
 answer = querying_pipeline.run(data=data,
-                               include_outputs_from = {"retriever"} if need_reader == False else {"retriever", "reader"} )
+                               include_outputs_from = {"retriever", "reader"} )
 
 st.write(":red[**a1->**]", answer)
 st.write(":red[**a2->**]", answer["reader"]["answers"][0])
