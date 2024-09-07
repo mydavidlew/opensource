@@ -44,9 +44,9 @@ if "HF_API_TOKEN" not in os.environ:
     os.environ["HF_API_TOKEN"] = dlreadtoken_key
 
 # All filename in a specific folder
-foldername = "datasets/"
-filefolder = list(Path(foldername).glob("**/*"))
-logging.info(f"[ai] filefolder information: {filefolder}")
+filefolder = "datasets/"
+foldername = list(Path(filefolder).glob("**/*"))
+logging.info(f"[ai] foldername information: {foldername}")
 
 # Array list of filelist = ["file1.txt", "file2.txt", "file3.txt"]
 filelist1 = ["datasets/Malaysia_Corruption_Reports.txt", "datasets/Malaysia_Corruption_1MDB.txt"]
@@ -104,7 +104,7 @@ indexing_pipeline.connect("cleaner", "splitter")
 indexing_pipeline.connect("splitter", "embedder")
 indexing_pipeline.connect("embedder", "writer")
 
-#indexing_pipeline.run({"file_type_router": {"sources": list(Path(output_dir).glob("**/*"))}})
+#indexing_pipeline.run({"file_type_router": {"sources": foldername}})
 indexing_pipeline.run({"plain_converter": {"sources": filelist}})
 #indexing_pipeline.run(data={"joiner": {"documents": documents}})
 
