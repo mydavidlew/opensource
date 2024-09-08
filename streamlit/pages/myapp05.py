@@ -130,11 +130,11 @@ querying_pipeline.add_component(name="reader", instance=reader_answer)
 querying_pipeline.add_component(name="generator", instance=generator)
 querying_pipeline.add_component(name="answer_builder", instance=AnswerBuilder())
 querying_pipeline.connect("embedder.embedding", "retriever.query_embedding")
-querying_pipeline.connect("retriever", "prompt_builder")
+querying_pipeline.connect("retriever", "prompt_builder.documents")
 querying_pipeline.connect("prompt_builder", "generator")
-querying_pipeline.connect("generator", "answer_builder")
-querying_pipeline.connect("retriever", "answer_builder")
-querying_pipeline.connect("retriever", "reader")
+querying_pipeline.connect("generator.replies", "answer_builder.replies")
+querying_pipeline.connect("retriever", "answer_builder.documents")
+querying_pipeline.connect("retriever", "reader.documents")
 
 query1 = "What are the corruption cases in Malaysia?"
 query2 = "Who was Pliny the Elder?"
@@ -152,7 +152,7 @@ data = {"embedder": {"text": query},
         "answer_builder": {"query": query}}
 #data["reader"] = {"query": query, "top_k": 3}
 answer = querying_pipeline.run(data=data,
-                               include_outputs_from = {"retriever", "reader", "generator"} )
+                               include_outputs_from = {"retriever", "reader", "generator", "answer_builder"} )
 
 # pipe["retriever"]["documents"][0].id/content/meta/score
 # pipe["reader"]["answers"][0].query/score/data/document/meta
