@@ -14,7 +14,7 @@ from haystack.components.embedders import SentenceTransformersTextEmbedder, Sent
 from haystack.components.readers import ExtractiveReader
 from haystack.components.routers import FileTypeRouter
 from haystack.components.joiners import DocumentJoiner
-from haystack.components.builders import PromptBuilder
+from haystack.components.builders import AnswerBuilder, PromptBuilder
 from haystack.components.preprocessors import DocumentSplitter, DocumentCleaner
 from haystack.components.generators import OpenAIGenerator, HuggingFaceLocalGenerator
 from haystack.components.writers import DocumentWriter
@@ -70,8 +70,9 @@ logging.info(f"[ai] documents information: {documents}")
 st.write(f":green[dataset:] {documents[0].meta['name']}")
 
 template = """Given these documents, answer the question.
+    Context:
     {% for doc in documents %}
-    Document: {{ loop.index }} - file: {{ doc.meta['file_path'] }}
+    Document: {{ loop.index }} - File: {{ doc.meta['file_path'] }}
     {{ doc.content }}
     {% endfor %}
     Question: {{query}}
@@ -127,11 +128,13 @@ querying_pipeline.add_component(name="retriever", instance=retriever_store)
 querying_pipeline.add_component(name="prompt_builder", instance=prompt_builder)
 querying_pipeline.add_component(name="reader", instance=reader_answer)
 querying_pipeline.add_component(name="generator", instance=generator)
+querying_pipeline.add_component(name="answer_builder", instance=AnswerBuilder())
 querying_pipeline.connect("embedder.embedding", "retriever.query_embedding")
 querying_pipeline.connect("retriever", "prompt_builder")
-querying_pipeline.connect("retriever", "reader")
 querying_pipeline.connect("prompt_builder", "generator")
-
+querying_pipeline.connect("generator", "answer_builder")
+querying_pipeline.connect("retriever", "answer_builder")
+querying_pipeline.connect("retriever", "reader")
 
 query1 = "What are the corruption cases in Malaysia?"
 query2 = "Who was Pliny the Elder?"
@@ -145,13 +148,22 @@ data = {"embedder": {"text": query},
         "retriever": {"top_k": 5},
         "prompt_builder": {"query": query},
         "reader": {"query": query, "top_k": 3},
-        "generator": {"generation_kwargs": {"max_new_tokens": 500}}}
+        "generator": {"generation_kwargs": {"max_new_tokens": 500}},
+        "answer_builder": {"query": query}}
 #data["reader"] = {"query": query, "top_k": 3}
 answer = querying_pipeline.run(data=data,
-                               include_outputs_from = {"retriever", "reader"} )
+                               include_outputs_from = {"retriever", "reader", "generator"} )
+
+# pipe["retriever"]["documents"][0].id/content/meta/score
+# pipe["reader"]["answers"][0].query/score/data/document/meta
+# pipe["generator"]["replies"][0]
+# pipe["answer_builder"]["answers"][0].data/query/documents/meta
 
 st.write(":red[**a1->**]", answer)
 st.write(":red[**a2->**]", answer["reader"]["answers"][0])
 st.write(":red[**a3->**] :blue[score=]", answer["reader"]["answers"][0].score, ":blue[, data=]", answer["reader"]["answers"][0].data)
 st.write(":red[**a4->**]", answer["generator"]["replies"][0])
-st.write(":red[**b1->**]", reader_answer)
+st.write(":red[**retriever->**]", answer["retriever"])
+st.write(":red[**reader->**]", answer["reader"])
+st.write(":red[**generator->**]", answer["generator"])
+st.write(":red[**answer_builder->**]", answer["answer_builder"])

@@ -36,6 +36,51 @@ a1->
                    context_offset=None, 
                    meta={'answer_page_number': 1})"
 ]}
+"answer_builder":{"answers":[
+0:"GeneratedAnswer(data='\n\n- 1MDB Embezzlement and Bribery\n- Sabah State Water Corruption\n - 1MDB 1MDB\n- 1MDB Embezzlement\n- 1MDB Bribery\n\n\n```',
+                   query='What are the corruption cases in Malaysia?',
+                   documents=[Document(id=44db85573cab1944dcd784ae4b40b773b0bf793b1392920d88ecee188574a235,
+                                       content: 'INTRODUCTION Combating corruption has increasing risen to the top of policymakers and company agenda...',
+                                       meta: {'file_path': 'datasets/Malaysia_Corruption_Reports.txt',
+                                              'source_id': 'ba5142509facbf055d337c9acca9f347b2705fdeedbf2c9d273432b83a2376ac',
+                                              'page_number': 1,
+                                              'split_id': 0,
+                                              'split_idx_start': 0,
+                                              '_split_overlap': [{'doc_id': 'bee6308b78739ccc2689bfc08723a42e1999e9c1661d0b1caa3beed118be3135', 'range': (0, 335)}]},
+                                       score: 0.6822135234197129),
+                              Document(id=bee6308b78739ccc2689bfc08723a42e1999e9c1661d0b1caa3beed118be3135,
+                                       content: 'be a turning point for tackling corruption and bribery within Malaysia. Increased efforts have been ...',
+                                       meta: {'file_path': 'datasets/Malaysia_Corruption_Reports.txt',
+                                              'source_id': 'ba5142509facbf055d337c9acca9f347b2705fdeedbf2c9d273432b83a2376ac',
+                                              'page_number': 1,
+                                              'split_id': 1,
+                                              'split_idx_start': 980,
+                                              '_split_overlap': [{'doc_id': '44db85573cab1944dcd784ae4b40b773b0bf793b1392920d88ecee188574a235', 'range': (980, 1315)},
+                                                                 {'doc_id': '93cf0d2fe708df2620ac5fbadabe675ad78217851233091001aee155adf93d13', 'range': (0, 313)}]},
+                                       score: 0.678032447267469),
+                   meta={})"
+]}
+"retriever":{"documents":[
+0:"Document(id=44db85573cab1944dcd784ae4b40b773b0bf793b1392920d88ecee188574a235,
+            content: 'INTRODUCTION Combating corruption has increasing risen to the top of policymakers and company agenda...',
+            meta: {'file_path': 'datasets/Malaysia_Corruption_Reports.txt',
+                   'source_id': 'ba5142509facbf055d337c9acca9f347b2705fdeedbf2c9d273432b83a2376ac',
+                   'page_number': 1,
+                   'split_id': 0,
+                   'split_idx_start': 0,
+                   '_split_overlap': [{'doc_id': 'bee6308b78739ccc2689bfc08723a42e1999e9c1661d0b1caa3beed118be3135', 'range': (0, 335)}]},
+            score: 0.6822135234197129)"
+1:"Document(id=bee6308b78739ccc2689bfc08723a42e1999e9c1661d0b1caa3beed118be3135,
+            content: 'be a turning point for tackling corruption and bribery within Malaysia. Increased efforts have been ...',
+            meta: {'file_path': 'datasets/Malaysia_Corruption_Reports.txt',
+                   'source_id': 'ba5142509facbf055d337c9acca9f347b2705fdeedbf2c9d273432b83a2376ac',
+                   'page_number': 1,
+                   'split_id': 1,
+                   'split_idx_start': 980,
+                   '_split_overlap': [{'doc_id': '44db85573cab1944dcd784ae4b40b773b0bf793b1392920d88ecee188574a235', 'range': (980, 1315)},
+                                      {'doc_id': '93cf0d2fe708df2620ac5fbadabe675ad78217851233091001aee155adf93d13', 'range': (0, 313)}]},
+            score: 0.678032447267469)"
+]}
 "generator":{"replies":[
 0:"False Question: What is the impact of corruption on the economy of a country?"
 ]}
