@@ -130,11 +130,15 @@ querying_pipeline.add_component(name="reader", instance=reader_answer)
 querying_pipeline.add_component(name="generator", instance=generator)
 querying_pipeline.add_component(name="answer_builder", instance=AnswerBuilder())
 querying_pipeline.connect("embedder.embedding", "retriever.query_embedding")
+querying_pipeline.connect("retriever", "reader.documents") # Extractive QA Pipeline
 querying_pipeline.connect("retriever", "prompt_builder.documents")
-querying_pipeline.connect("prompt_builder", "generator")
+querying_pipeline.connect("prompt_builder", "generator") # Generative QA Pipeline
 querying_pipeline.connect("generator.replies", "answer_builder.replies")
 querying_pipeline.connect("retriever", "answer_builder.documents")
-querying_pipeline.connect("retriever", "reader.documents")
+
+# Extractive QA pipeline will consist of three components: an embedder, retriever, and reader.
+# Generative QA pipeline will consist of four components: an embedder, retriever, prompt_builder, and generator.
+# answer_builder component can be used by both Extractive and Generative QA pipeline to construct an output
 
 query1 = "What are the corruption cases in Malaysia?"
 query2 = "Who was Pliny the Elder?"
