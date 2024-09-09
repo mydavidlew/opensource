@@ -158,6 +158,13 @@ data = {"embedder": {"text": query},
 answer = querying_pipeline.run(data=data,
                                include_outputs_from = {"retriever", "reader", "generator", "answer_builder"} )
 
+with open("datasets/indexing_pipeline.yml", "w") as ifile:
+    indexing_pipeline.dump(ifile)
+ifile.close()
+with open("datasets/querying_pipeline.yml", "w") as qfile:
+    indexing_pipeline.dump(qfile)
+qfile.close()
+
 # pipe["retriever"]["documents"][0].id/content/meta/score
 # pipe["reader"]["answers"][0].query/score/data/document/meta
 # pipe["generator"]["replies"][0]
