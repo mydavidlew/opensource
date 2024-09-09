@@ -81,6 +81,8 @@ prompt_builder = PromptBuilder(template=template)
 
 model_embedder = "sentence-transformers/all-mpnet-base-v2" # better & larger model than below
 #model_embedder = "sentence-transformers/multi-qa-mpnet-base-dot-v1"
+#device_embedder = ComponentDevice.from_str("cuda:0") # train using accelerate GPU
+device_embedder = None
 model_generator = "HuggingFaceTB/SmolLM-1.7B-Instruct"
 
 document_store = InMemoryDocumentStore()
@@ -92,7 +94,7 @@ indexing_pipeline.add_component(name="plain_converter", instance=TextFileToDocum
 indexing_pipeline.add_component(name="joiner", instance=DocumentJoiner())
 indexing_pipeline.add_component(name="cleaner", instance=DocumentCleaner())
 indexing_pipeline.add_component(name="splitter", instance=DocumentSplitter(split_by="word", split_length=200, split_overlap=50))
-indexing_pipeline.add_component(name="embedder", instance=SentenceTransformersDocumentEmbedder(model=model_embedder, progress_bar=True))
+indexing_pipeline.add_component(name="embedder", instance=SentenceTransformersDocumentEmbedder(model=model_embedder, device=device_embedder, progress_bar=True))
 indexing_pipeline.add_component(name="writer", instance=DocumentWriter(document_store=document_store, policy=DuplicatePolicy.SKIP))
 #indexing_pipeline.connect("file_type_router.text/plain", "plain_converter.sources")
 #indexing_pipeline.connect("file_type_router.text/markdown", "markdown_converter.sources")
@@ -123,7 +125,7 @@ generator.warm_up()
 
 retriever_store = InMemoryEmbeddingRetriever(document_store=document_store, top_k=10)
 querying_pipeline = Pipeline()
-querying_pipeline.add_component(name="embedder", instance=SentenceTransformersTextEmbedder(model=model_embedder, progress_bar=True))
+querying_pipeline.add_component(name="embedder", instance=SentenceTransformersTextEmbedder(model=model_embedder, device=device_embedder, progress_bar=True))
 querying_pipeline.add_component(name="retriever", instance=retriever_store)
 querying_pipeline.add_component(name="prompt_builder", instance=prompt_builder)
 querying_pipeline.add_component(name="reader", instance=reader_answer)
