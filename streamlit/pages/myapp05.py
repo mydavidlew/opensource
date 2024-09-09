@@ -83,7 +83,6 @@ model_embedder = "sentence-transformers/all-mpnet-base-v2" # better & larger mod
 #model_embedder = "sentence-transformers/multi-qa-mpnet-base-dot-v1"
 #device_embedder = ComponentDevice.from_str("cuda:0") # train using accelerate GPU
 device_embedder = None
-model_generator = "HuggingFaceTB/SmolLM-1.7B-Instruct"
 
 document_store = InMemoryDocumentStore()
 indexing_pipeline = Pipeline()
@@ -115,11 +114,17 @@ reader_answer = ExtractiveReader(no_answer=False)
 reader_answer.warm_up()
 #generator = OpenAIGenerator(model="gpt-4o", api_key=Secret.from_token(openai_key))
 generator = HuggingFaceLocalGenerator(
-        model=model_generator,
+        model="HuggingFaceTB/SmolLM-1.7B-Instruct",
         task="text-generation",
         huggingface_pipeline_kwargs={"device_map": "auto",
-                                     "model_kwargs": {}},
-        generation_kwargs={"max_new_tokens": 1000, "do_sample": True})
+                                     "model_kwargs": {"torch_dtype": torch.float16}},
+        generation_kwargs={"max_new_tokens": 500, "temperature": 0.5, "do_sample": True})
+generator = HuggingFaceLocalGenerator(
+        model="google/flan-t5-large",
+        task="text2text-generation",
+        huggingface_pipeline_kwargs={"device_map": "auto",
+                                     "model_kwargs": {"torch_dtype": torch.float16}},
+        generation_kwargs={"max_new_tokens": 500, "temperature": 0.5, "do_sample": True})
 # Start the Generator
 generator.warm_up()
 
