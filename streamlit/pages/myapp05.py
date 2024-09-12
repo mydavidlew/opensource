@@ -41,6 +41,7 @@ dlwritetoken_key = "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"
 
 if "HF_API_TOKEN" not in os.environ:
     os.environ["HF_API_TOKEN"] = dlreadtoken_key
+    os.environ["HF_TOKEN"] = dlreadtoken_key
 
 # All filename in a specific folder
 filefolder = "datasets/"
