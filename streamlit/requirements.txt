@@ -1,0 +1,33 @@
+accelerate
+bitsandbytes
+trafilatura
+streamlit
+datasets
+haystack-ai
+torch --index-url https://download.pytorch.org/whl/cpu
+torchvision --index-url https://download.pytorch.org/whl/cpu
+torchaudio --index-url https://download.pytorch.org/whl/cpu
+tensorflow
+tokenizers
+transformers
+huggingface-hub
+sentence-transformers
+openai
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
