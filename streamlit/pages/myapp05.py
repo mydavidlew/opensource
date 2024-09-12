@@ -146,7 +146,7 @@ querying_pipeline.connect("retriever", "answer_builder.documents")
 # Generative QA pipeline will consist of four components: an embedder, retriever, prompt_builder, and generator.
 # answer_builder component can be used by both Extractive and Generative QA pipeline to construct an output
 
-query1 = "What are the corruption cases in Malaysia?"
+query1 = "List of corruption cases in Malaysia?"
 query2 = "Who was Pliny the Elder?"
 query = query1
 # Truncate the query (necessary if using api embedder since SPRM server has no GPU)
@@ -171,10 +171,11 @@ with open("datasets/querying_pipeline.yml", "w") as qfile:
     indexing_pipeline.dump(qfile)
 qfile.close()
 
-# pipe["retriever"]["documents"][0].id/content/meta/score
-# pipe["reader"]["answers"][0].query/score/data/document/meta
-# pipe["generator"]["replies"][0]
-# pipe["answer_builder"]["answers"][0].data/query/documents/meta
+# Output formats according to type of pipelines
+#pipe["retriever"]["documents"][0].id/content/meta/score
+#pipe["reader"]["answers"][0].query/score/data/document/meta
+#pipe["generator"]["replies"][0]
+#pipe["answer_builder"]["answers"][0].data/query/documents/meta
 
 st.write(":red[**a1->**]", answer)
 st.write(":red[**a2->**]", answer["reader"]["answers"][0])
