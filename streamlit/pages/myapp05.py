@@ -1,12 +1,11 @@
 import streamlit as st
 import pandas as pd
-import os, logging
+import os, logging, torch
 
 from pathlib import Path
 from datasets import load_dataset
 from haystack import Pipeline, Document
-from haystack.utils import Secret
-from haystack.utils import ComponentDevice
+from haystack.utils import Secret, ComponentDevice
 from haystack.components.fetchers import LinkContentFetcher
 from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
 from haystack.components.converters import HTMLToDocument, MarkdownToDocument, PyPDFToDocument, TextFileToDocument
