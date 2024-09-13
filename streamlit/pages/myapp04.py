@@ -1,3 +1,4 @@
+import helper.config as cfg
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -26,19 +27,11 @@ st.sidebar.markdown(
     in a loop for around 5 seconds. Enjoy!"""
 )
 
-# OpenAI
-DefaultProject_key = "sk-pr"+"oj-LaYTCPr8Jvqyx_w8tZ5jtZ56-7j4ks2Pfwgb578rFs4T-lfbw-Muv-fDhNT3BlbkFJ8M3piIy-sbaU-_3323nqght9wC2xtfBupXoGiRCTthGYkf6gkg_r8hvNIA"
-Application_key = "sk-BmZ"+"m896KKtezM6HTQV-jsFXQPqJqsLz-mbOYbuoBe0T3BlbkFJAc-ErVPAJ-UdYjTGWiXctGuFCHa46nrHcSY_sWo4UA"
-DataMicron_key = "sk-pr"+"oj-tOlDkDvCjXIfDZeoOJJJT3BlbkFJdSyAfPKCBrK7u9d7wlM8"
-
-# HuggingFace
-dlreadtoken_key = "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"
-dlwritetoken_key = "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"
-
 if "OPENAI_API_KEY" not in os.environ:
-    os.environ["OPENAI_API_KEY"] = Application_key
+    os.environ["OPENAI_API_KEY"] = cfg.Application_key
 if "HF_API_TOKEN" not in os.environ:
-    os.environ["HF_API_TOKEN"] = dlreadtoken_key
+    os.environ["HF_API_TOKEN"] = cfg.dlreadtoken_key
+    os.environ["HF_TOKEN"] = cfg.dlreadtoken_key
 
 def chatgpt():
     client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
@@ -197,10 +190,10 @@ def ragchat():
 def main():
     tab01, tab02, tab03, tab04, tab05 = st.tabs(["👻 OpenAI", "👻 SimpleChat", "👻 RAG AI", "👻 Other", "👻 Other"])
     with tab01:
-        #chatgpt()
+        chatgpt()
         pass
     with tab02:
-        #simplechat()
+        simplechat()
         pass
     with tab03:
         ragchat()

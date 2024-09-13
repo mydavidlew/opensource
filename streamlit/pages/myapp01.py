@@ -25,7 +25,7 @@ st.set_page_config(page_title="Application #01", page_icon="🌸", layout="wide"
 st.sidebar.title("🌸 Query Assistant")
 st.sidebar.markdown(
     """This GenAI illustrates a combination of local contents with public AI models to produce
-    a Question & Answer AI Assistant based on uploaded documents. Enjoy!"""
+    a Question & Answer AI Assistant based on user uploaded documents. Enjoy!"""
 )
 
 # Configure logging

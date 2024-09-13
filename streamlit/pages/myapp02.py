@@ -9,6 +9,7 @@ st.sidebar.markdown(
     [**Streamlit**](https://docs.streamlit.io/develop/api-reference). We're generating a bunch of random numbers 
     in a loop for around 5 seconds. Enjoy!"""
 )
+start_btn = st.sidebar.button(f"Click to **Start**", type="primary")
 
 DATE_COLUMN = 'dob'
 DATA_URL = ('http://localhost/Duplicate_Patient_Demo_20240726.csv')
@@ -48,5 +49,7 @@ def main():
         st.write(data['identification_no'])
 
 if __name__ == '__main__':
-    st.title("Read CSV from URL")
-    main()
+    if start_btn:
+        st.title("Read CSV from URL")
+        with st.container(border=True):
+            main()
