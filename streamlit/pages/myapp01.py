@@ -1,3 +1,4 @@
+import helper.config as cfg
 import streamlit as st
 import pandas as pd
 import torch, random, time, logging, os
@@ -31,13 +32,9 @@ st.sidebar.markdown(
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
-# HuggingFace
-dlreadtoken_key = "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"
-dlwritetoken_key = "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"
-
 if "HF_API_TOKEN" not in os.environ:
-    os.environ["HF_API_TOKEN"] = dlreadtoken_key
-    os.environ["HF_TOKEN"] = dlreadtoken_key
+    os.environ["HF_API_TOKEN"] = cfg.dlreadtoken_key
+    os.environ["HF_TOKEN"] = cfg.dlreadtoken_key
 
 # Embedder model used
 embedder_model0 = "Snowflake/snowflake-arctic-embed-l" # good embedding model: https://huggingface.co/Snowflake/snowflake-arctic-embed-l
