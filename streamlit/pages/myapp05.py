@@ -113,7 +113,7 @@ indexing_pipeline.run({"plain_converter": {"sources": filelist}})
 reader_answer = ExtractiveReader(no_answer=False)
 reader_answer.warm_up()
 #generator = OpenAIGenerator(model="gpt-4o", api_key=Secret.from_token(openai_key))
-generator = HuggingFaceLocalGenerator(
+generator1 = HuggingFaceLocalGenerator(
         model="HuggingFaceTB/SmolLM-1.7B-Instruct",
         task="text-generation",
         huggingface_pipeline_kwargs={"device_map": "auto",
@@ -159,7 +159,7 @@ data = {"embedder": {"text": query},
         "retriever": {"top_k": 5},
         "prompt_builder": {"query": query},
         "reader": {"query": query, "top_k": 3},
-        "generator": {"generation_kwargs": {"max_new_tokens": 500}},
+        "generator": {"generation_kwargs": {"max_new_tokens": 350}},
         "answer_builder": {"query": query}}
 #data["reader"] = {"query": query, "top_k": 3}
 answer = querying_pipeline.run(data=data,

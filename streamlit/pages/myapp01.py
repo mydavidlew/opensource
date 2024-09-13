@@ -22,11 +22,10 @@ from tensorflow.python.ops.summary_ops_v2 import write
 from tensorflow.tools.docs.doc_controls import header
 
 st.set_page_config(page_title="Application #01", page_icon="🌸", layout="wide")
-st.sidebar.title("🌸 Application #01")
+st.sidebar.title("🌸 Query Assistant")
 st.sidebar.markdown(
-    """This demo illustrates a combination of geospatial data visualisation, plotting and animation with 
-    [**Streamlit**](https://docs.streamlit.io/develop/api-reference). We're generating a bunch of random numbers 
-    in a loop for around 5 seconds. Enjoy!"""
+    """This GenAI illustrates a combination of local contents with public AI models to produce
+    a Question & Answer AI Assistant based on uploaded documents. Enjoy!"""
 )
 
 # Configure logging
@@ -127,9 +126,9 @@ def get_generative_answer(query_pipeline, query):
         "embedder": {"text": query},
         "retriever": {"top_k": 5},
         "prompt_builder": {"query": query},
-        "generator": {"generation_kwargs": {"max_new_tokens": 500}}
+        "generator": {"generation_kwargs": {"max_new_tokens": 350}}
         })
-    print("results = ", results)
+    logging.info(f"[ai] generator results: {results}")
     answer = results["generator"]["replies"][0]
     return answer
 
@@ -183,14 +182,12 @@ def test_chatbot():
             st.session_state.messages.append({"role": "user", "content": prompt})
             st.markdown(prompt)
         with st.chat_message("assistant"):
-            most_accurate_score = 0
-            score = 0
             try:
                 response = get_generative_answer(querying_pipeline, prompt)
                 st.session_state.messages.append({"role": "assistant", "content": response})
                 st.markdown(response)
             except Exception as e:
-                st.write(f"Error: :red[**{e}**]")
+                logging.error(f"Error: :red[**{e}**]")
 
 def rag_chatbot():
     # Fetch the Text Data
@@ -208,16 +205,20 @@ def rag_chatbot():
         indexing_pipeline.run(data={"joiner": {"documents": content_data}})
         #
         # Initialize a Generator
-        #generator = HuggingFaceLocalGenerator(
-        #                                   model="meta-llama/Meta-Llama-3.1-8B-Instruct",
-        #                                    huggingface_pipeline_kwargs={"device_map": "auto",
+        #generator = HuggingFaceLocalGenerator(model="meta-llama/Meta-Llama-3.1-8B-Instruct",
+        #                                      huggingface_pipeline_kwargs={"device_map": "auto",
         #                                                                   "model_kwargs": {"load_in_4bit": True,
         #                                                                                   "bnb_4bit_use_double_quant": True,
         #                                                                                   "bnb_4bit_quant_type": "nf4",
         #                                                                                   "bnb_4bit_compute_dtype": torch.bfloat16}},
-        #                                   generation_kwargs={"max_new_tokens": 500})
-        generator = HuggingFaceLocalGenerator(model="HuggingFaceTB/SmolLM-1.7B-Instruct",
-                                              task="text-generation",
+        #                                      generation_kwargs={"max_new_tokens": 500})
+        #generator = HuggingFaceLocalGenerator(model="HuggingFaceTB/SmolLM-1.7B-Instruct",
+        #                                      task="text-generation",
+        #                                      huggingface_pipeline_kwargs={"device_map": "auto",
+        #                                                                   "model_kwargs": {"torch_dtype": torch.float16}},
+        #                                      generation_kwargs={"max_new_tokens": 500, "temperature": 0.5, "do_sample": True})
+        generator = HuggingFaceLocalGenerator(model="google/flan-t5-large",
+                                              task="text2text-generation",
                                               huggingface_pipeline_kwargs={"device_map": "auto",
                                                                            "model_kwargs": {"torch_dtype": torch.float16}},
                                               generation_kwargs={"max_new_tokens": 500, "temperature": 0.5, "do_sample": True})
@@ -241,7 +242,8 @@ def rag_chatbot():
                 truncated_words = words[:4000]
                 prompt = ' '.join(truncated_words)
                 st.session_state.messages.append({"role": "user", "content": prompt})
-                #st.write(prompt)
+                logging.info(f"[ai] user query: {prompt}")
+                st.write(prompt)
             # get_generative_answer("Who won the Best Picture Award in 2024?")
             # get_generative_answer("What was the box office performance of the Best Picture nominees?")
             # get_generative_answer("What was the reception of the ceremony")
@@ -252,14 +254,15 @@ def rag_chatbot():
                 try:
                     response = get_generative_answer(querying_pipeline, prompt)
                     st.session_state.messages.append({"role": "assistant", "content": response})
-                    #st.write(response)
+                    logging.info(f"[ai] ai response: {response}")
+                    st.write(response)
                 except Exception as e:
-                    st.write(f"Error: :red[**{e}**]")
+                    logging.error(f"Error: :red[**{e}**]")
 
 def main():
     rag_chatbot()
 
 if __name__ == '__main__':
-    st.title("AI Assistant")
+    #st.title("Query Assistant")
     st.cache_resource.clear()
     main()
