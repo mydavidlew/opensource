@@ -76,19 +76,14 @@ def upload_files():
 
 def prompt_syntax():
     # Define a Template Prompt
-    prompt_template = """
-    <|begin_of_text|><|start_header_id|>user<|end_header_id|>
-
-    Using the information contained in the context, give a comprehensive answer to the question.
+    prompt_template = """Using the information contained in the context, give a comprehensive answer to the question.
     If the answer cannot be deduced from the context, do not give an answer.
     Context:
       {% for doc in documents %}
-      {{ doc.content }} URL:{{ doc.meta['url'] }}
+      {{ doc.content }} URL:{{ doc.meta['file_path'] }}
       {% endfor %};
-      Question: {{query}}<|eot_id|>
-
-    <|start_header_id|>assistant<|end_header_id|>
-    """
+      Question: {{query}}
+      Answer: """
     #prompt_builder = PromptBuilder(template=prompt_template)
     return prompt_template
 
