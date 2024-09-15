@@ -48,7 +48,7 @@ def upload_files(cleanup = False):
     with st.form("upload-documents", clear_on_submit=True, border=True):
         uploaded_files = st.file_uploader(":blue[**Choose multiple text/pdf files**]", type=['txt', 'pdf'], accept_multiple_files=True)
         submitted = st.form_submit_button("Confirm Upload")
-        if (submitted and uploaded_files) is not None:
+        if (submitted is True) and (uploaded_files is not None):
             for upload_file in uploaded_files:
                 temp_file = os.path.join(temp_dir, upload_file.name)
                 logging.info(f"[ai] file object: {upload_file}")
