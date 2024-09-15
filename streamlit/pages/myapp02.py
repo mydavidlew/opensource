@@ -5,7 +5,7 @@ import tempfile as tf
 import torch, time, logging, shutil, os
 
 from haystack.core.pipeline import Pipeline
-from haystack.utils.device import ComponentDevice
+from haystack.utils import ComponentDevice
 from haystack.dataclasses import Document
 from haystack.components.fetchers import LinkContentFetcher
 from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
