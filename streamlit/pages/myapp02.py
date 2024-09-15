@@ -57,6 +57,7 @@ def upload_files(cleanup = False):
                 with open(mode="w+b", file=temp_file) as fn:
                     fn.write(upload_file.getvalue())
                     fn.close()
+            uploaded_files.clear()
             if temp_documents is not None:
                 logging.info(f"[ai] files list: {temp_documents}")
                 st.write(temp_documents)
