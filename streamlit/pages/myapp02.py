@@ -174,12 +174,6 @@ def rag_chatbot():
                 st.session_state.messages.append({"role": "user", "content": prompt})
                 logging.info(f"[ai] user query: {prompt}")
                 st.write(prompt)
-            # get_generative_answer("Who won the Best Picture Award in 2024?")
-            # get_generative_answer("What was the box office performance of the Best Picture nominees?")
-            # get_generative_answer("What was the reception of the ceremony")
-            # get_generative_answer("Can you name some of the films that got multiple nominations?")
-            # --- unrelated question: let's see how our RAG pipeline performs.
-            # get_generative_answer("Audioslave was formed by members of two iconic bands. Can you name the bands and discuss the sound of Audioslave in comparison?")
             with st.chat_message("assistant"):
                 try:
                     response = get_generative_answer(querying_pipeline, prompt)
@@ -194,5 +188,7 @@ def main():
 
 if __name__ == '__main__':
     #st.title("Query Assistant")
+    st.session_state.clear()
+    st.cache_data.clear()
     st.cache_resource.clear()
     main()
