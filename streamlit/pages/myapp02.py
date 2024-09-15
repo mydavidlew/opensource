@@ -1,55 +1,198 @@
+import helper.config as cfg
 import streamlit as st
 import pandas as pd
-import numpy as np
+import tempfile as tf
+import torch, time, logging, shutil, os
 
-st.set_page_config(page_title="Application #02", page_icon="🌼", layout="wide")
-st.sidebar.title("🌼 Application #02")
+from haystack.core.pipeline import Pipeline
+from haystack.utils.device import ComponentDevice
+from haystack.dataclasses import Document
+from haystack.components.fetchers import LinkContentFetcher
+from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
+from haystack.components.converters import HTMLToDocument, TextFileToDocument, MarkdownToDocument, PyPDFToDocument
+from haystack.components.embedders import SentenceTransformersTextEmbedder, SentenceTransformersDocumentEmbedder
+from haystack.components.routers import FileTypeRouter
+from haystack.components.joiners import DocumentJoiner
+from haystack.components.builders import PromptBuilder
+from haystack.components.preprocessors import DocumentSplitter, DocumentCleaner
+from haystack.components.generators import OpenAIGenerator, HuggingFaceLocalGenerator
+from haystack.components.writers import DocumentWriter
+from haystack.document_stores.types import DuplicatePolicy
+from haystack.document_stores.in_memory import InMemoryDocumentStore
+
+st.set_page_config(page_title="Application #02", page_icon="🌾", layout="wide")
+st.sidebar.title("🌾 Query Assistant")
 st.sidebar.markdown(
-    """This demo illustrates a combination of geospatial data visualisation, plotting and animation with 
-    [**Streamlit**](https://docs.streamlit.io/develop/api-reference). We're generating a bunch of random numbers 
-    in a loop for around 5 seconds. Enjoy!"""
+    """This GenAI illustrates a combination of local contents with public AI models to produce
+    a Question & Answer AI Assistant based on user uploaded (:rainbow[**multiple**]) documents. Enjoy!"""
 )
-start_btn = st.sidebar.button(f"Click to **Start**", type="primary")
 
-DATE_COLUMN = 'dob'
-DATA_URL = ('http://localhost/Duplicate_Patient_Demo_20240726.csv')
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
-#DATE_COLUMN = 'date/time'
-#DATA_URL = ('https://s3-us-west-2.amazonaws.com/streamlit-demo-data/uber-raw-data-sep14.csv.gz')
+if "HF_API_TOKEN" not in os.environ:
+    os.environ["HF_API_TOKEN"] = cfg.dlreadtoken_key
+    os.environ["HF_TOKEN"] = cfg.dlreadtoken_key
 
-@st.cache_data
-def load_data(nrows):
-    try:
-        data = pd.read_csv(DATA_URL, nrows=nrows)
-        lowercase = lambda x: str(x).lower()
-        data.rename(lowercase, axis='columns', inplace=True)
-        data[DATE_COLUMN] = pd.to_datetime(data[DATE_COLUMN])
-        return data
-    except Exception as e:
-        st.write(f"Error: :red[**{e}**]")
-        return None
+# Embedder model used
+embedder_model0 = "Snowflake/snowflake-arctic-embed-l" # good embedding model: https://huggingface.co/Snowflake/snowflake-arctic-embed-l
+embedder_model1 = "sentence-transformers/all-mpnet-base-v2"
+device_model0 = ComponentDevice.from_str("cuda:0")  # load the model on GPU
+device_model1 = None
+embedder_model = embedder_model1
+device_model = device_model1
+
+def upload_files(cleanup = False):
+    temp_dir = tf.mkdtemp() # use a temporary store folder
+    temp_documents = [] # array list of files to process
+    with st.form("upload-documents", clear_on_submit=True, border=True):
+        uploaded_files = st.file_uploader(":blue[**Choose multiple text/pdf files**]", type=['txt', 'pdf'], accept_multiple_files=True)
+        submitted = st.form_submit_button("Confirm Upload")
+        if (submitted and uploaded_files) is not None:
+            for upload_file in uploaded_files:
+                temp_file = os.path.join(temp_dir, upload_file.name)
+                logging.info(f"[ai] file object: {upload_file}")
+                logging.info(f"[ai] file path: {temp_file}")
+                temp_documents.append(temp_file)
+                with open(mode="w+b", file=temp_file) as fn:
+                    fn.write(upload_file.getvalue())
+                    fn.close()
+            if temp_documents is not None:
+                logging.info(f"[ai] files list: {temp_documents}")
+                st.write(temp_documents)
+            if cleanup:
+                shutil.rmtree(temp_dir)
+            return temp_documents
+        else:
+            st.markdown(":red[**Pls upload text/pdf files...**]")
+            return None
+
+def prompt_syntax():
+    # Define a Template Prompt
+    prompt_template = """Using the information contained in the context, give a comprehensive answer to the question.
+    If the answer cannot be deduced from the context, do not give an answer.
+    Context:
+      {% for doc in documents %}
+      {{ doc.content }} URL:{{ doc.meta['file_path'] }}
+      {% endfor %};
+      Question: {{query}}
+      Answer: """
+    #prompt_builder = PromptBuilder(template=prompt_template)
+    return prompt_template
+
+def index_xpipeline(document_store):
+    # Building the Index Pipeline
+    indexing_pipeline = Pipeline()
+    indexing_pipeline.add_component(name="file_type_router", instance=FileTypeRouter(mime_types=["text/plain", "text/markdown", "application/pdf"]))
+    indexing_pipeline.add_component(name="plain_converter", instance=TextFileToDocument(encoding="utf-8"))
+    indexing_pipeline.add_component(name="markdown_converter", instance=MarkdownToDocument())
+    indexing_pipeline.add_component(name="pypdf_converter", instance=PyPDFToDocument(converter=None))
+    indexing_pipeline.add_component(name="joiner", instance=DocumentJoiner())
+    indexing_pipeline.add_component(name="cleaner", instance=DocumentCleaner())
+    indexing_pipeline.add_component(name="splitter", instance=DocumentSplitter(split_by="word", split_length=200, split_overlap=50))
+    indexing_pipeline.add_component(name="embedder", instance=SentenceTransformersDocumentEmbedder(model=embedder_model, device=device_model, progress_bar=True))
+    indexing_pipeline.add_component(name="writer", instance=DocumentWriter(document_store=document_store, policy=DuplicatePolicy.SKIP))
+    # connect the components
+    indexing_pipeline.connect("file_type_router.text/plain", "plain_converter.sources")
+    indexing_pipeline.connect("file_type_router.text/markdown", "markdown_converter.sources")
+    indexing_pipeline.connect("file_type_router.application/pdf", "pypdf_converter.sources")
+    indexing_pipeline.connect("plain_converter", "joiner")
+    indexing_pipeline.connect("markdown_converter", "joiner")
+    indexing_pipeline.connect("pypdf_converter", "joiner")
+    indexing_pipeline.connect("joiner.documents", "cleaner.documents")
+    indexing_pipeline.connect("cleaner.documents", "splitter.documents")
+    indexing_pipeline.connect("splitter.documents", "embedder.documents")
+    indexing_pipeline.connect("embedder.documents", "writer.documents")
+    return indexing_pipeline
+
+def query_xpipeline(document_store, prompt_template, generator):
+    # Build the Query Pipeline
+    querying_pipeline = Pipeline()
+    querying_pipeline.add_component("embedder", SentenceTransformersTextEmbedder(model=embedder_model, device=device_model, progress_bar=True))
+    querying_pipeline.add_component("retriever", InMemoryEmbeddingRetriever(document_store=document_store, top_k=5))
+    querying_pipeline.add_component("prompt_builder", PromptBuilder(template=prompt_template))
+    querying_pipeline.add_component("generator", generator)
+    # connect the components
+    querying_pipeline.connect("embedder.embedding", "retriever.query_embedding")
+    querying_pipeline.connect("retriever.documents", "prompt_builder.documents")
+    querying_pipeline.connect("prompt_builder", "generator")
+    return querying_pipeline
+
+def get_generative_answer(query_pipeline, query):
+    # Let's ask some questions!
+    results = query_pipeline.run({
+        "embedder": {"text": query},
+        "retriever": {"top_k": 5},
+        "prompt_builder": {"query": query},
+        "generator": {"generation_kwargs": {"max_new_tokens": 350}}
+        })
+    logging.info(f"[ai] generator results: {results}")
+    answer = results["generator"]["replies"][0]
+    return answer
+
+def rag_chatbot():
+    # Fetch the Text Data
+    sources_data = upload_files()
+    if sources_data is not None:
+        # In memory document store
+        document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
+        # Building the Index Pipeline
+        indexing_pipeline = index_xpipeline(document_store)
+        indexing_pipeline.run(data={"file_type_router": {"sources": sources_data}})
+        #
+        # Define a Template Prompt
+        prompt_template = prompt_syntax()
+        # Initialize a Generator
+        #generator = HuggingFaceLocalGenerator(model="HuggingFaceTB/SmolLM-1.7B-Instruct",
+        #                                      task="text-generation",
+        #                                      huggingface_pipeline_kwargs={"device_map": "auto",
+        #                                                                   "model_kwargs": {"torch_dtype": torch.float16}},
+        #                                      generation_kwargs={"max_new_tokens": 500, "temperature": 0.5, "do_sample": True})
+        generator = HuggingFaceLocalGenerator(model="google/flan-t5-large",
+                                              task="text2text-generation",
+                                              huggingface_pipeline_kwargs={"device_map": "auto",
+                                                                           "model_kwargs": {"torch_dtype": torch.float16}},
+                                              generation_kwargs={"max_new_tokens": 500, "temperature": 0.5, "do_sample": True})
+        # Start the Generator
+        generator.warm_up()
+        # Build the Query Pipeline
+        querying_pipeline = query_xpipeline(document_store, prompt_template, generator)
+        #
+        if "messages" not in st.session_state:
+            st.session_state.messages = []
+
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+        #
+        if prompt := st.chat_input("What is up?"):
+            with st.chat_message("user"):
+                # Truncate the query (necessary if using api embedder since system has no GPU)
+                words = prompt.split()
+                truncated_words = words[:4000]
+                prompt = ' '.join(truncated_words)
+                st.session_state.messages.append({"role": "user", "content": prompt})
+                logging.info(f"[ai] user query: {prompt}")
+                st.write(prompt)
+            # get_generative_answer("Who won the Best Picture Award in 2024?")
+            # get_generative_answer("What was the box office performance of the Best Picture nominees?")
+            # get_generative_answer("What was the reception of the ceremony")
+            # get_generative_answer("Can you name some of the films that got multiple nominations?")
+            # --- unrelated question: let's see how our RAG pipeline performs.
+            # get_generative_answer("Audioslave was formed by members of two iconic bands. Can you name the bands and discuss the sound of Audioslave in comparison?")
+            with st.chat_message("assistant"):
+                try:
+                    response = get_generative_answer(querying_pipeline, prompt)
+                    st.session_state.messages.append({"role": "assistant", "content": response})
+                    logging.info(f"[ai] ai response: {response}")
+                    st.write(response)
+                except Exception as e:
+                    logging.error(f"Error: :red[**{e}**]")
 
 def main():
-    # Create a text element and let the reader know the data is loading.
-    data_load_state = st.text('Loading data...')
-    # Load 10,000 rows of data into the dataframe.
-    data = load_data(10000)
-    # Notify the reader that the data was successfully loaded.
-    data_load_state.text("Loading data...Done! (using st.cache_data)")
-
-    if data:
-        st.subheader('Raw data')
-        st.write(data)
-
-        st.subheader('Number of dob')
-        hist_values = np.histogram(data[DATE_COLUMN].dt.hour, bins=24, range=(0,24))[0]
-        st.bar_chart(hist_values)
-
-        st.markdown('IDs')
-        st.write(data['identification_no'])
+    rag_chatbot()
 
 if __name__ == '__main__':
-    if start_btn:
-        st.title("Read CSV from URL")
-        with st.container(border=True):
-            main()
+    #st.title("Query Assistant")
+    st.cache_resource.clear()
+    main()

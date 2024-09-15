@@ -4,7 +4,7 @@ import pandas as pd
 import torch, random, time, logging, os
 
 from io import StringIO
-from haystack import Pipeline
+from haystack.core.pipeline import Pipeline
 from haystack.utils import ComponentDevice
 from haystack.dataclasses import Document
 from haystack.components.fetchers import LinkContentFetcher
@@ -18,15 +18,12 @@ from haystack.components.generators import OpenAIGenerator, HuggingFaceLocalGene
 from haystack.components.writers import DocumentWriter
 from haystack.document_stores.types import DuplicatePolicy
 from haystack.document_stores.in_memory import InMemoryDocumentStore
-from mpmath.libmp import to_int
-from tensorflow.python.ops.summary_ops_v2 import write
-from tensorflow.tools.docs.doc_controls import header
 
 st.set_page_config(page_title="Application #01", page_icon="🌸", layout="wide")
 st.sidebar.title("🌸 Query Assistant")
 st.sidebar.markdown(
-    """This GenAI illustrates a combination of local contents with public AI models to produce
-    a Question & Answer AI Assistant based on user uploaded documents. Enjoy!"""
+    """This GenAI illustrates a combination of local content with public AI models to produce
+    a Question & Answer AI Assistant based on user uploaded (:rainbow[**single**]) document. Enjoy!"""
 )
 
 # Configure logging
@@ -45,7 +42,7 @@ device_model1 = None
 embedder_model = embedder_model1
 device_model = device_model1
 
-def upload_files():
+def upload_file():
     # Fetch the Text Data
     uploaded_file = st.file_uploader(":blue[**Choose a text file**]", type=['txt'], accept_multiple_files=False)
     if uploaded_file is not None:
@@ -183,19 +180,18 @@ def test_chatbot():
 
 def rag_chatbot():
     # Fetch the Text Data
-    content_data = upload_files()
-    if content_data:
+    content_data = upload_file()
+    if content_data is not None:
         #st.write(content_data)
         #
         # In memory document store
         document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
-        # Define a Template Prompt
-        prompt_template = prompt_syntax()
-        #
         # Building the Index Pipeline
         indexing_pipeline = index_xpipeline(document_store)
         indexing_pipeline.run(data={"joiner": {"documents": content_data}})
         #
+        # Define a Template Prompt
+        prompt_template = prompt_syntax()
         # Initialize a Generator
         #generator = HuggingFaceLocalGenerator(model="meta-llama/Meta-Llama-3.1-8B-Instruct",
         #                                      huggingface_pipeline_kwargs={"device_map": "auto",
@@ -216,7 +212,6 @@ def rag_chatbot():
                                               generation_kwargs={"max_new_tokens": 500, "temperature": 0.5, "do_sample": True})
         # Start the Generator
         generator.warm_up()
-        #
         # Build the Query Pipeline
         querying_pipeline = query_xpipeline(document_store, prompt_template, generator)
         #

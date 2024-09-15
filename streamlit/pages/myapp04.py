@@ -1,207 +1,132 @@
-import helper.config as cfg
 import streamlit as st
 import pandas as pd
-import numpy as np
-from openai import OpenAI
-import torch, random, time, os
+import openpyxl as xl
+import os
 
-from haystack import Document
-from haystack import Pipeline
-from haystack.utils import ComponentDevice
-from haystack.components.fetchers import LinkContentFetcher
-from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
-from haystack.components.converters import HTMLToDocument, TextFileToDocument
-from haystack.components.embedders import SentenceTransformersTextEmbedder, SentenceTransformersDocumentEmbedder
-from haystack.components.builders import PromptBuilder
-from haystack.components.preprocessors import DocumentSplitter
-from haystack.components.generators import OpenAIGenerator, HuggingFaceLocalGenerator
-from haystack.components.writers import DocumentWriter
-from haystack.document_stores.in_memory import InMemoryDocumentStore
-from tensorflow.python.ops.summary_ops_v2 import write
-
-st.set_page_config(page_title="Application #04", page_icon="🪻", layout="wide")
-st.sidebar.title("🪻 Application #04")
+st.set_page_config(page_title="Application #04", page_icon="🌻", layout="wide")
+st.sidebar.title("🌻 Application #04")
 st.sidebar.markdown(
     """This demo illustrates a combination of geospatial data visualisation, plotting and animation with 
     [**Streamlit**](https://docs.streamlit.io/develop/api-reference). We're generating a bunch of random numbers 
     in a loop for around 5 seconds. Enjoy!"""
 )
 
-if "OPENAI_API_KEY" not in os.environ:
-    os.environ["OPENAI_API_KEY"] = cfg.Application_key
-if "HF_API_TOKEN" not in os.environ:
-    os.environ["HF_API_TOKEN"] = cfg.dlreadtoken_key
-    os.environ["HF_TOKEN"] = cfg.dlreadtoken_key
+# Function to get list of worksheet in xlsx
+@st.cache_data
+def get_xlsx_sheetname(xlsx_file_path):
+    with st.spinner('Scanning excel, Wait for it...'):
+        excel_file = pd.ExcelFile(xlsx_file_path, engine="calamine")
+    st.success("Done! --> " + xlsx_file_path.name)
+    # for sheet in excel_file.sheet_names:
+    #     ws = pd.read_excel(xlsx_file_path, sheet_name=sheet)
+    #     row_count = len(ws.index)
+    #     column_count = len(ws.columns)
+    #     st.write("sheet:", sheet, "-- row:", row_count, "-- col:", column_count)
+    return excel_file.sheet_names
 
-def chatgpt():
-    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
+# Function to convert xlsx to csv
+def convert_xlsx_to_csv(xlsx_file_path, csv_file_path, sheet_name=0):
+    # Read the Excel file
+    df = pd.read_excel(xlsx_file_path, sheet_name=sheet_name, header=0)
+    # Write the DataFrame to a CSV file
+    df.to_csv(csv_file_path, index=False)
 
-    if "openai_model" not in st.session_state:
-        st.session_state["openai_model"] = "gpt-3.5-turbo"
+# Function to read xlsx and filter distinct values in a specified range
+def filter_distinct_values(xlsx_file_path, sheet_name=0, start_row=0, end_row=None, start_col=0, end_col=None):
+    # Read the Excel file
+    df = pd.read_excel(xlsx_file_path, sheet_name=sheet_name, header=0)
+    # Select the specific range
+    df_range = df.iloc[start_row:end_row, start_col:end_col]
+    # Drop duplicates to filter distinct values
+    distinct_values = df_range.drop_duplicates()
+    return distinct_values
 
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+def domain(xlsx_file_path, csv_file_path):
+    tab01, tab02, tab03, tab04, tab05 = st.tabs(["👻 Select worksheet", "👻 Read worksheet", "👻 Convert worksheet", "👻 Filter worksheet", "👻 Other worksheet"])
+    sheet = 0
+    with tab01:
+        #if "df" not in st.session_state:
+        #    st.session_state.df = get_xlsx_sheetname(xlsx_file_path)
+        #items = st.dataframe(st.session_state.df, use_container_width=True, hide_index=False, on_select="rerun", selection_mode="single-row")
+        df = get_xlsx_sheetname(xlsx_file_path)
+        items = st.dataframe(df, use_container_width=True, hide_index=False, on_select="rerun", selection_mode="single-row")
+        try:
+            sheet = items.selection.rows[0]
+        except IndexError:
+            st.markdown(":red[***No***] :blue[*worksheet is selected!*]")
+        st.write("Selected worksheet is: ", sheet)
+        csv_file_path = csv_file_path + "_" + str(sheet) + ".csv"
 
-    for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+    with tab02:
+        nrcds = st.slider('#of Records', min_value=0, max_value=10000, value=100, step=10)
+        with st.spinner('Reading excel, Wait for it...'):
+            df = pd.read_excel(xlsx_file_path, sheet_name=sheet, header=0, nrows=nrcds)
+        st.success("Done! --> " + xlsx_file_path.name)
+        st.dataframe(df, use_container_width=True)
+        st.write("Total records: ", len(df.index))
 
-    if prompt := st.chat_input("What is up?"):
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
+    with tab03:
+        with st.spinner("Generating file 👉 " + csv_file_path):
+            # Convert the file
+            convert_xlsx_to_csv(xlsx_file_path, csv_file_path, sheet_name=sheet)
+        st.success("Done! --> " + xlsx_file_path.name + " ➡️➡️➡️ " + csv_file_path)
 
-        with st.chat_message("assistant"):
-            try:
-                stream = client.chat.completions.create(
-                    model=st.session_state["openai_model"],
-                    messages=[{"role": m["role"], "content": m["content"]}
-                              for m in st.session_state.messages],
-                    stream=True,)
-                response = st.write_stream(stream)
-                st.session_state.messages.append({"role": "assistant", "content": response})
-            except Exception as e:
-                st.write(f"Error: :red[**{e}**]")
-
-def simplechat():
-    fetcher = LinkContentFetcher()
-    converter = HTMLToDocument()
-    prompt_template = """
-    According to the contents of this website:
-    {% for document in documents %}
-      {{document.content}}
-    {% endfor %}
-    Answer the given question: {{query}}
-    Answer:
-    """
-    prompt_builder = PromptBuilder(template=prompt_template)
-    llm = OpenAIGenerator()
-
-    pipeline = Pipeline()
-    pipeline.add_component("fetcher", fetcher)
-    pipeline.add_component("converter", converter)
-    pipeline.add_component("prompt", prompt_builder)
-    pipeline.add_component("llm", llm)
-
-    pipeline.connect("fetcher.streams", "converter.sources")
-    pipeline.connect("converter.documents", "prompt.documents")
-    pipeline.connect("prompt.prompt", "llm.prompt")
-
-    try:
-        result = pipeline.run({"fetcher": {"urls": ["https://haystack.deepset.ai/overview/quick-start"]},
-                           "prompt": {"query": "Which components do I need for a RAG pipeline?"}})
-        st.markdown(result["llm"]["replies"][0])
-    except Exception as e:
-        st.write(f"Error: :red[**{e}**]")
-
-def get_generative_answer(query_pipeline, query):
-  results = query_pipeline.run({
-      "text_embedder": {"text": query},
-      "prompt_builder": {"query": query}
-    }
-  )
-  answer = results["generator"]["replies"][0]
-  return answer
-
-def ragchat():
-    uploaded_file = st.file_uploader(":blue[**Choose a excel file**]", type=['xls', 'xlsx'], accept_multiple_files=False)
-    if uploaded_file is not None:
-        content_file = pd.read_fwf(uploaded_file)
-        content_data = [Document(content=content_file)]
-        st.write(content_data)
-        # In memory document store
-        document_store = InMemoryDocumentStore()
+    with tab04:
+        # Specify the file path and the range
+        start_row = 1  # Adjust these values to your desired range
+        end_row = None  # None means until the last row
+        start_col = 0  # Column index (0-based)
+        end_col = 1  # None  # None means until the last column
         #
-        #🚅 Components
-        #- splitter: DocumentSplitter
-        #- embedder: SentenceTransformersDocumentEmbedder
-        #- writer: DocumentWriter
-        #🛤️ Connections
-        #- splitter.documents -> embedder.documents(List[Document])
-        #- embedder.documents -> writer.documents(List[Document])
-        indexing_pipeline = Pipeline()
-        indexing_pipeline.add_component("splitter", DocumentSplitter(split_by="word", split_length=200))
-        indexing_pipeline.add_component("embedder",
-            SentenceTransformersDocumentEmbedder(
-                model="Snowflake/snowflake-arctic-embed-l", # good embedding model: https://huggingface.co/Snowflake/snowflake-arctic-embed-l
-                device=None,                                # load the model on GPU = ComponentDevice.from_str("cuda:0")
-            ))
-        indexing_pipeline.add_component("writer", DocumentWriter(document_store=document_store))
-        # connect the components
-        indexing_pipeline.connect("splitter", "embedder")
-        indexing_pipeline.connect("embedder", "writer")
+        col1, col2, col3, col4 = st.columns([1, 1, 1, 1], gap="large", vertical_alignment="center")
+        with col1:
+            start_row = st.number_input('start_row', min_value=0, max_value=100, value=1, step=1)
+        with col2:
+            start_col = st.number_input('start_col', min_value=0, max_value=100, value=0, step=1)
+        with col3:
+            end_col = st.number_input('end_col', min_value=0, max_value=100, value=1, step=1)
+        with col4:
+            st.markdown("""
+                <style>
+                    button {
+                        padding-top: 5px !important;
+                        padding-bottom: 5px !important;
+                        text-align: center !important;
+                    }
+                </style>
+            """, unsafe_allow_html=True)
+            bt_start = st.button(r"$\textsf{\Large Start}$", use_container_width=True)
         #
-        indexing_pipeline.run({"splitter": {"documents": content_data}})
-        #
-        # RAF prompt template
-        prompt_template = """
-        <|begin_of_text|><|start_header_id|>user<|end_header_id|>
+        if bt_start:
+            with st.spinner('Filtering, Wait for it...'):
+                # Get the distinct values in the specified range
+                distinct_values = filter_distinct_values(xlsx_file_path, sheet, start_row, end_row, start_col, end_col)
+            st.success("Done! --> " + xlsx_file_path.name)
+            # Print or use the distinct values
+            st.dataframe(distinct_values, use_container_width=True)
 
+    with tab05:
+        with st.spinner('Scanning, Wait for it...'):
+            wb = xl.load_workbook(xlsx_file_path, read_only=True)
+        st.success("Done! --> " + xlsx_file_path.name)
+        sheets = wb.sheetnames
+        st.write("worksheets: ", sheets)
+        for sheet in sheets:
+            ws=wb[sheet]
+            row_count = ws.max_row
+            column_count = ws.max_column
+            st.write(f"sheet: [**{sheet}**] -- row: [**{row_count}**] -- col: [**{column_count}**]")
 
-        Using the information contained in the context, give a comprehensive answer to the question.
-        If the answer cannot be deduced from the context, do not give an answer.
-
-        Context:
-          {% for doc in documents %}
-          {{ doc.content }} URL:{{ doc.meta['url'] }}
-          {% endfor %};
-          Question: {{query}}<|eot_id|>
-
-        <|start_header_id|>assistant<|end_header_id|>
-
-
-        """
-        prompt_builder = PromptBuilder(template=prompt_template)
-        #
-        #
-        generator = HuggingFaceLocalGenerator(
-            model="meta-llama/Meta-Llama-3.1-8B-Instruct",
-            huggingface_pipeline_kwargs={"device_map": "auto",
-                                         "model_kwargs": {"load_in_4bit": True,
-                                                          "bnb_4bit_use_double_quant": True,
-                                                          "bnb_4bit_quant_type": "nf4",
-                                                          "bnb_4bit_compute_dtype": torch.bfloat16}},
-            generation_kwargs={"max_new_tokens": 500})
-        #
-        generator.warm_up()
-        #
-        #
-        query_pipeline = Pipeline()
-        query_pipeline.add_component("text_embedder", SentenceTransformersTextEmbedder(
-                model="Snowflake/snowflake-arctic-embed-l", # good embedding model: https://huggingface.co/Snowflake/snowflake-arctic-embed-l
-                device=ComponentDevice.from_str("cuda:0"),  # load the model on GPU
-                prefix="Represent this sentence for searching relevant passages: ", # as explained in the model card (https://huggingface.co/Snowflake/snowflake-arctic-embed-l#using-huggingface-transformers), queries should be prefixed
-            ))
-        query_pipeline.add_component("retriever", InMemoryEmbeddingRetriever(document_store=document_store, top_k=5))
-        query_pipeline.add_component("prompt_builder", PromptBuilder(template=prompt_template))
-        query_pipeline.add_component("generator", generator)
-        # connect the components
-        query_pipeline.connect("text_embedder.embedding", "retriever.query_embedding")
-        query_pipeline.connect("retriever.documents", "prompt_builder.documents")
-        query_pipeline.connect("prompt_builder", "generator")
-        #
-        if prompt := st.chat_input("What is up?"):
-            # q = "Who won the Best Picture Award in 2024?"
-            answer = get_generative_answer(query_pipeline, prompt)
-            st.write(answer)
+def main():
+    uploaded_excel = st.file_uploader(":blue[**Choose a excel file**]", type=['xls','xlsx'], accept_multiple_files=False)
+    if uploaded_excel is not None:
+        #st.write(uploaded_excel)
+        basefile, extension = os.path.splitext(uploaded_excel.name)
+        downloaded_csv = "datasets/" + basefile
+        domain(uploaded_excel, downloaded_csv)
     else:
         st.markdown(":red[**Pls upload a excel file...**]")
 
-def main():
-    tab01, tab02, tab03, tab04, tab05 = st.tabs(["👻 OpenAI", "👻 SimpleChat", "👻 RAG AI", "👻 Other", "👻 Other"])
-    with tab01:
-        chatgpt()
-        pass
-    with tab02:
-        simplechat()
-        pass
-    with tab03:
-        ragchat()
-    with tab04:
-        pass
-    with tab05:
-        pass
-
 if __name__ == '__main__':
-    st.title("Simple AI chatbot")
+    st.title("Process xls content")
     main()
