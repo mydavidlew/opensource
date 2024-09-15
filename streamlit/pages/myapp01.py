@@ -251,5 +251,7 @@ def main():
 
 if __name__ == '__main__':
     #st.title("Query Assistant")
+    st.session_state.clear()
+    st.cache_data.clear()
     st.cache_resource.clear()
     main()
