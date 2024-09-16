@@ -189,9 +189,10 @@ def main():
 
 if __name__ == '__main__':
     #st.title("Query Assistant")
-    reset_btn = st.sidebar.button(f"Click to **Reset**", type="primary")
+    reset_btn = st.sidebar.button(f"Click to **Reset**", type="primary", use_container_width=True)
     if reset_btn is True:
         st.session_state.clear()
         st.cache_data.clear()
         st.cache_resource.clear()
+    st.sidebar.image(image="helper/eco-friendly.png", caption=None, use_column_width="always")
     main()
