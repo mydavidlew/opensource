@@ -1,9 +1,14 @@
 accelerate
 bitsandbytes
 trafilatura
+openpyxl
 streamlit
+pypdf
 pymupdf
 pymupdf4llm
+markdownlit
+markdown-it-py
+mdit-plain
 datasets
 haystack-ai
 torch --index-url https://download.pytorch.org/whl/cpu
