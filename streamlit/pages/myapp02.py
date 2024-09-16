@@ -43,30 +43,31 @@ embedder_model = embedder_model1
 device_model = device_model1
 
 def upload_files(cleanup = False):
-    temp_dir = tf.mkdtemp() # use a temporary store folder
-    temp_documents = [] # array list of files to process
+    if "temp_documents" not in st.session_state:
+        st.session_state.temp_documents = [] # array list of files to process
+    if "temp_dir" not in st.session_state:
+        st.session_state.temp_dir = tf.mkdtemp() # use a temporary store folder
     with st.form("upload-documents", clear_on_submit=True, border=True):
         uploaded_files = st.file_uploader(":blue[**Choose multiple text/pdf files**]", type=['txt', 'pdf'], accept_multiple_files=True)
         submitted = st.form_submit_button("Confirm Upload")
         if (submitted is True) and (uploaded_files is not None):
+            st.session_state.temp_documents = [] # clear it before load new list
             for upload_file in uploaded_files:
-                temp_file = os.path.join(temp_dir, upload_file.name)
+                temp_file = os.path.join(st.session_state.temp_dir, upload_file.name)
                 logging.info(f"[ai] file object: {upload_file}")
                 logging.info(f"[ai] file path: {temp_file}")
-                temp_documents.append(temp_file)
+                st.session_state.temp_documents.append(temp_file)
                 with open(mode="w+b", file=temp_file) as fn:
                     fn.write(upload_file.getvalue())
                     fn.close()
-            uploaded_files.clear()
-            if temp_documents is not None:
-                logging.info(f"[ai] files list: {temp_documents}")
-                st.write(temp_documents)
-            if cleanup:
-                shutil.rmtree(temp_dir)
-            return temp_documents
-        else:
-            st.markdown(":red[**Pls upload text/pdf files...**]")
-            return None
+                uploaded_files.clear()
+        if st.session_state.temp_documents is not None:
+            st.write(st.session_state.temp_documents)
+        if cleanup:
+            shutil.rmtree(st.session_state.temp_dir)
+    logging.info(f"[ai] uploaded_files: {uploaded_files}")
+    logging.info(f"[ai] temp_documents: {st.session_state.temp_documents}")
+    return st.session_state.temp_documents
 
 def prompt_syntax():
     # Define a Template Prompt
@@ -78,7 +79,6 @@ def prompt_syntax():
       {% endfor %};
       Question: {{query}}
       Answer: """
-    #prompt_builder = PromptBuilder(template=prompt_template)
     return prompt_template
 
 def index_xpipeline(document_store):
@@ -189,7 +189,9 @@ def main():
 
 if __name__ == '__main__':
     #st.title("Query Assistant")
-    st.session_state.clear()
-    st.cache_data.clear()
-    st.cache_resource.clear()
+    reset_btn = st.sidebar.button(f"Click to **Reset**", type="primary")
+    if reset_btn is True:
+        st.session_state.clear()
+        st.cache_data.clear()
+        st.cache_resource.clear()
     main()

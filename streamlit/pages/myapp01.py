@@ -62,7 +62,10 @@ def upload_file():
         #dataframe = pd.read_fwf(uploaded_file)
         #st.write(f":red[**dataframe**]", dataframe)
         content_data = [Document(content=string_data, meta={"name": uploaded_file.name, "type": uploaded_file.type, "size": uploaded_file.size, "url": uploaded_file._file_urls})]
+        uploaded_file.flush()
         uploaded_file.close()
+        logging.info(f"[ai] uploaded_file: {uploaded_file}")
+        logging.info(f"[ai] content_data: {content_data}")
         return content_data
     else:
         st.markdown(":red[**Pls upload a text file...**]")
@@ -251,7 +254,9 @@ def main():
 
 if __name__ == '__main__':
     #st.title("Query Assistant")
-    st.session_state.clear()
-    st.cache_data.clear()
-    st.cache_resource.clear()
+    reset_btn = st.sidebar.button(f"Click to **Reset**", type="primary")
+    if reset_btn is True:
+        st.session_state.clear()
+        st.cache_data.clear()
+        st.cache_resource.clear()
     main()
