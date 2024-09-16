@@ -60,7 +60,7 @@ def upload_files(cleanup = False):
                 with open(mode="w+b", file=temp_file) as fn:
                     fn.write(upload_file.getvalue())
                     fn.close()
-                uploaded_files.clear()
+            uploaded_files.clear()
         if st.session_state.temp_documents is not None:
             st.write(st.session_state.temp_documents)
         if cleanup:
