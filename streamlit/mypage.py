@@ -6,9 +6,11 @@ st.sidebar.title(f'👉 Homepage! 👈')
 st.sidebar.success("Select a task above ☝️")
 st.sidebar.markdown(
     """
-    Dedicated to built :green[**Artificial Intelligent**] and :green[**Graph Data Science**] projects.
+    Dedicated built for :green[**Artificial Intelligent**] and :green[**Graph Data Science**] projects.
 """
 )
+st.sidebar.image(image="helper/eco-friendly.png", caption=None, use_column_width="always")
+st.logo(image="helper/eco-friendly.png", icon_image="helper/eco-friendly.png")
 
 def main():
     # content of the page
