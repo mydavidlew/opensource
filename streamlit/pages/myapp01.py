@@ -43,28 +43,30 @@ embedder_model = embedder_model1
 device_model = device_model1
 
 def upload_file():
+    if "file_uploader_key" not in st.session_state:
+        st.session_state.file_uploader_key = 0
+    if "uploaded_file" not in st.session_state:
+        st.session_state.uploaded_file = None
     # Fetch the Text Data
-    uploaded_file = st.file_uploader(":blue[**Choose a text file**]", type=['txt'], accept_multiple_files=False)
-    if uploaded_file is not None:
+    st.session_state.uploaded_file = st.file_uploader(":blue[**Choose a text file**]", type=['txt'], accept_multiple_files=False, key=st.session_state.file_uploader_key)
+    if st.session_state.uploaded_file is not None:
         # To read file as bytes:
-        #bytes_data = uploaded_file.getvalue()
+        bytes_data = st.session_state.uploaded_file.getvalue()
         #st.write(f":red[**bytes_data**]", bytes_data)
         # To read file
-        #reads_data = uploaded_file.read()
+        #reads_data = st.session_state.uploaded_file.read()
         #st.write(f":red[**reads_data**]", reads_data)
         # To convert to a string based IO:
-        stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
+        #stringio = StringIO(st.session_state.uploaded_file.getvalue().decode("utf-8"))
         #st.write(f":red[**stringio**]", stringio)
         # To read file as string:
-        string_data = stringio.read()
+        #string_data = stringio.read()
         #st.write(f":red[**string_data**]", string_data)
         # Can be used wherever a "file-like" object is accepted:
-        #dataframe = pd.read_fwf(uploaded_file)
+        #dataframe = pd.read_fwf(st.session_state.uploaded_file)
         #st.write(f":red[**dataframe**]", dataframe)
-        content_data = [Document(content=string_data, meta={"name": uploaded_file.name, "type": uploaded_file.type, "size": uploaded_file.size, "url": uploaded_file._file_urls})]
-        uploaded_file.flush()
-        uploaded_file.close()
-        logging.info(f"[ai] uploaded_file: {uploaded_file}")
+        content_data = [Document(content=bytes_data.decode('utf-8'), meta={"name": st.session_state.uploaded_file.name, "type": st.session_state.uploaded_file.type, "size": st.session_state.uploaded_file.size, "url": st.session_state.uploaded_file._file_urls})]
+        logging.info(f"[ai] uploaded_file: {st.session_state.uploaded_file}")
         logging.info(f"[ai] content_data: {content_data}")
         return content_data
     else:
@@ -256,6 +258,8 @@ if __name__ == '__main__':
     #st.title("Query Assistant")
     reset_btn = st.sidebar.button(f"Click to **Reset**", type="primary", use_container_width=True)
     if reset_btn is True:
+        st.session_state.file_uploader_key += 1
+        st.session_state.uploaded_file = None
         st.session_state.clear()
         st.cache_data.clear()
         st.cache_resource.clear()

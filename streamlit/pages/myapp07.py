@@ -1,8 +1,12 @@
 import helper.config as cfg
 import streamlit as st
-import os, logging, shutil
-from pathlib import Path
 import tempfile as tf
+import pandas as pd
+import os, logging, shutil
+
+from pathlib import Path
+from io import StringIO
+from haystack.dataclasses import Document
 
 st.set_page_config(page_title="Application #07", page_icon="🪷", layout="wide")
 st.sidebar.title("🪷 Code-Testpad")
@@ -87,5 +91,33 @@ def test03():
     else:
         st.markdown(":red[**Pls upload (text/pdf) files...**]")
 
+def test04():
+    content_data = 0
+    uploaded_file = st.file_uploader(":blue[**Choose a text file**]", type=['txt'], accept_multiple_files=False)
+    if uploaded_file is not None:
+        # To read file as bytes:
+        bytes_data = uploaded_file.getvalue()
+        st.write(f":red[**bytes_data**]", bytes_data.decode('utf-8'))
+        # To read file
+        reads_data = uploaded_file.read()
+        st.write(f":red[**reads_data**]", reads_data.decode('utf-8'))
+        # To convert to a string based IO:
+        stringio = StringIO(uploaded_file.getvalue().decode("utf-8"))
+        st.write(f":red[**stringio**]", stringio)
+        # To read file as string:
+        string_data = stringio.read()
+        st.write(f":red[**string_data**]", string_data)
+        # Can be used wherever a "file-like" object is accepted:
+        #dataframe = pd.read_csv(uploaded_file, sep=None, delimiter=None, header=None, dtype=str)
+        #st.write(f":red[**dataframe**]", dataframe)
+        ###
+        content_data = [Document(content=bytes_data, meta={"name": uploaded_file.name,
+                                                            "type": uploaded_file.type,
+                                                            "size": uploaded_file.size,
+                                                            "url": uploaded_file._file_urls})]
+    else:
+        st.markdown(":red[**Pls upload a text file...**]")
+    logging.info(f"[ai] uploaded_file: {uploaded_file}")
+    logging.info(f"[ai] content_data: {content_data}")
 
-test02()
+test04()

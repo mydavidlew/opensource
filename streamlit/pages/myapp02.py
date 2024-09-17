@@ -50,7 +50,7 @@ def upload_files(cleanup = False):
     with st.form("upload-documents", clear_on_submit=True, border=True):
         uploaded_files = st.file_uploader(":blue[**Choose multiple text/pdf files**]", type=['txt', 'pdf'], accept_multiple_files=True)
         submitted = st.form_submit_button("Confirm Upload")
-        if (submitted is True) and (uploaded_files is not None):
+        if (submitted is True) and (len(uploaded_files) != 0):
             st.session_state.temp_documents = [] # clear it before load new list
             for upload_file in uploaded_files:
                 temp_file = os.path.join(st.session_state.temp_dir, upload_file.name)
@@ -61,7 +61,7 @@ def upload_files(cleanup = False):
                     fn.write(upload_file.getvalue())
                     fn.close()
             uploaded_files.clear()
-        if st.session_state.temp_documents is not None:
+        if len(st.session_state.temp_documents) != 0:
             st.write(st.session_state.temp_documents)
         if cleanup:
             shutil.rmtree(st.session_state.temp_dir)

@@ -49,7 +49,7 @@ def main():
 
 if __name__ == '__main__':
     start_btn = st.sidebar.button(f"Click to **Start**", type="primary", use_container_width=True)
-    if start_btn:
+    if start_btn is True:
         st.title("Read CSV from URL")
         with st.container(border=True):
             main()
