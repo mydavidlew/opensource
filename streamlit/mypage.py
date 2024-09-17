@@ -36,8 +36,8 @@ def submain():
     # builds the sidebar menu
     with st.sidebar:
         st.page_link('mypage.py', label='Main Application', icon='🏠')
-        st.page_link('pages/myapp01.py', label='MyApp01 Checker', icon='🛡️')
-        st.page_link('pages/myapp02.py', label='MyApp02 Checker', icon='🌍')
+        st.page_link('pages/myapp01.py', label='RAG-Single', icon='🌸️')
+        st.page_link('pages/myapp02.py', label='RAG-Multiple', icon='🌾')
 
 if __name__ == '__main__':
     st.title("🏠 Welcome to MyPages! 👋")
