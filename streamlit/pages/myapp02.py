@@ -69,6 +69,33 @@ def upload_files(cleanup = False):
     logging.info(f"[ai] temp_documents: {st.session_state.temp_documents}")
     return st.session_state.temp_documents
 
+def upload_files1(cleanup = False):
+    if "temp_documents" not in st.session_state:
+        st.session_state.temp_documents = [] # array list of files to process
+    if "temp_dir" not in st.session_state:
+        st.session_state.temp_dir = tf.mkdtemp() # use a temporary store folder
+    uploaded_files = st.file_uploader(":blue[**Choose multiple text/pdf files**]", type=['txt', 'pdf'], accept_multiple_files=True)
+    if len(uploaded_files) != 0:
+        st.session_state.temp_documents = [] # clear it before load new list
+        for upload_file in uploaded_files:
+            temp_file = os.path.join(st.session_state.temp_dir, upload_file.name)
+            logging.info(f"[ai] file object: {upload_file}")
+            logging.info(f"[ai] file path: {temp_file}")
+            st.session_state.temp_documents.append(temp_file)
+            with open(mode="w+b", file=temp_file) as fn:
+                fn.write(upload_file.getvalue())
+                fn.close()
+        uploaded_files.clear()
+    else:
+        st.markdown(":red[**Pls upload few text/pdf files...**]")
+    if len(st.session_state.temp_documents) != 0:
+        st.write(st.session_state.temp_documents)
+    if cleanup:
+        shutil.rmtree(st.session_state.temp_dir)
+    logging.info(f"[ai] uploaded_files: {uploaded_files}")
+    logging.info(f"[ai] temp_documents: {st.session_state.temp_documents}")
+    return st.session_state.temp_documents
+
 def prompt_syntax():
     # Define a Template Prompt
     prompt_template = """Using the information contained in the context, give a comprehensive answer to the question.
@@ -134,7 +161,7 @@ def get_generative_answer(query_pipeline, query):
 def rag_chatbot():
     # Fetch the Text Data
     sources_data = upload_files()
-    if sources_data is not None:
+    if len(sources_data) != 0:
         # In memory document store
         document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
         # Building the Index Pipeline
@@ -191,6 +218,7 @@ if __name__ == '__main__':
     #st.title("Query Assistant")
     reset_btn = st.sidebar.button(f"Click to **Reset**", type="primary", use_container_width=True)
     if reset_btn is True:
+        st.session_state.temp_documents = []
         st.session_state.clear()
         st.cache_data.clear()
         st.cache_resource.clear()

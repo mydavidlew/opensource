@@ -45,6 +45,38 @@ device_model = device_model1
 def upload_file():
     if "file_uploader_key" not in st.session_state:
         st.session_state.file_uploader_key = 0
+    if "content_data" not in st.session_state:
+        st.session_state.content_data = None
+    # Fetch the Text Data
+    with st.form("upload-documents", clear_on_submit=True, border=True):
+        uploaded_file = st.file_uploader(":blue[**Choose a text file**]", type=['txt'], accept_multiple_files=False)
+        submitted = st.form_submit_button("Confirm Upload")
+        if (submitted is True) and (uploaded_file is not None):
+            # To read file as bytes:
+            bytes_data = uploaded_file.getvalue()
+            #st.write(f":red[**bytes_data**]", bytes_data)
+            # To read file
+            #reads_data = st.session_state.uploaded_file.read()
+            #st.write(f":red[**reads_data**]", reads_data)
+            # To convert to a string based IO:
+            #stringio = StringIO(st.session_state.uploaded_file.getvalue().decode("utf-8"))
+            #st.write(f":red[**stringio**]", stringio)
+            # To read file as string:
+            #string_data = stringio.read()
+            #st.write(f":red[**string_data**]", string_data)
+            # Can be used wherever a "file-like" object is accepted:
+            #dataframe = pd.read_fwf(st.session_state.uploaded_file)
+            #st.write(f":red[**dataframe**]", dataframe)
+            st.session_state.content_data = [Document(content=bytes_data.decode('utf-8'), meta={"name": uploaded_file.name, "type": uploaded_file.type, "size": uploaded_file.size, "url": uploaded_file._file_urls})]
+        if st.session_state.content_data is not None:
+            st.write(f"[ File: :orange[**{st.session_state.content_data[0].meta['name']}**] --- Type: :orange[**{st.session_state.content_data[0].meta['type']}**] --- Size: :orange[**{st.session_state.content_data[0].meta['size']}**] bytes ]")
+    logging.info(f"[ai] uploaded_file: {uploaded_file}")
+    logging.info(f"[ai] content_data: {st.session_state.content_data}")
+    return st.session_state.content_data
+
+def upload_file1():
+    if "file_uploader_key" not in st.session_state:
+        st.session_state.file_uploader_key = 0
     if "uploaded_file" not in st.session_state:
         st.session_state.uploaded_file = None
     # Fetch the Text Data
