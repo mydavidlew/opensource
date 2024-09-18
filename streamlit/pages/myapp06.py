@@ -134,12 +134,12 @@ def rag_qna_single():
     querying_pipeline.add_component(name="reader", instance=reader_answer)
     querying_pipeline.add_component(name="generator", instance=generator)
     querying_pipeline.add_component(name="answer_builder", instance=AnswerBuilder())
-    querying_pipeline.connect("embedder.embedding", "retriever.query_embedding")
-    querying_pipeline.connect("retriever", "reader.documents") # Extractive QA Pipeline
-    querying_pipeline.connect("retriever", "prompt_builder.documents")
-    querying_pipeline.connect("prompt_builder", "generator") # Generative QA Pipeline
-    querying_pipeline.connect("generator.replies", "answer_builder.replies")
+    querying_pipeline.connect("embedder.embedding", "retriever.query_embedding") # Common connector
     querying_pipeline.connect("retriever", "answer_builder.documents")
+    querying_pipeline.connect("retriever", "reader.documents") # Extractive QA Pipeline
+    querying_pipeline.connect("retriever", "prompt_builder.documents") # Generative QA Pipeline
+    querying_pipeline.connect("prompt_builder", "generator")
+    querying_pipeline.connect("generator.replies", "answer_builder.replies")
 
     # Extractive QA pipeline will consist of three components: an embedder, retriever, and reader.
     # Generative QA pipeline will consist of four components: an embedder, retriever, prompt_builder, and generator.
@@ -161,7 +161,7 @@ def rag_qna_single():
             "answer_builder": {"query": query}}
     #data["reader"] = {"query": query, "top_k": 3}
     answer = querying_pipeline.run(data=data,
-                                   include_outputs_from = {"retriever", "reader", "generator", "answer_builder"} )
+                                   include_outputs_from = {"retriever", "prompt_builder", "reader", "generator", "answer_builder"} )
 
     with open("datasets/indexing_pipeline.yml", "w") as ifile:
         indexing_pipeline.dump(ifile)
@@ -176,10 +176,11 @@ def rag_qna_single():
     #pipe["generator"]["replies"][0]
     #pipe["answer_builder"]["answers"][0].data/query/documents/meta
 
-    st.write(":red[**a1->**]", answer)
-    st.write(":red[**a2->**]", answer["reader"]["answers"][0])
-    st.write(":red[**a3->**] :blue[score=]", answer["reader"]["answers"][0].score, ":blue[, data=]", answer["reader"]["answers"][0].data)
-    st.write(":red[**a4->**]", answer["generator"]["replies"][0])
+    st.write(":red[**complete->**]", answer)
+    st.write(":red[**ExtractiveReader->**]", answer["reader"]["answers"][0])
+    st.write(":red[**generator.replies->**]", answer["generator"]["replies"][0])
+    st.write(":red[**reader.itemise->**] :blue[score=]", answer["reader"]["answers"][0].score, ":blue[, data=]", answer["reader"]["answers"][0].data)
+
     st.write(":red[**retriever->**]", answer["retriever"])
     st.write(":red[**reader->**]", answer["reader"])
     st.write(":red[**generator->**]", answer["generator"])

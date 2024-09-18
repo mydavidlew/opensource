@@ -1,4 +1,4 @@
-answer_builder.documents->
+complete->
 {
 "reader":{"answers":[
 0:"ExtractedAnswer(query='What are the corruption cases in Malaysia?', 
@@ -86,7 +86,7 @@ answer_builder.documents->
 ]}
 }
 
-reader.documents->
+ExtractedAnswer->
 ExtractedAnswer ExtractedAnswer(query='What are the corruption cases in Malaysia?', 
                                 score=0.7954429984092712, 
                                 data='bribery, extortion, fraud, embezzlement, blackmail, illegal gambling, laundering and nepotism', 
@@ -104,25 +104,30 @@ ExtractedAnswer(query: str,
 
 context         NoneType	None
 context_offset  NoneType	None
-data            str	      'bribery, extortion, fraud, embezzlement, blackmail, illegal gambling, laundering and nepotism'
+data            str	        'bribery, extortion, fraud, embezzlement, blackmail, illegal gambling, laundering and nepotism'
 document        Document	Document(id=bee6308b78739ccc2689bfc08723a42e1999e9c1661d0b1caa3beed118be3135, 
-                                   content: 'be a turning point for tackling corruption and bribery within Malaysia. Increased efforts have been ...', 
-                                   meta: {'file_path': 'datasets/Malaysia_Corruption_Reports.txt', 
-                                          'source_id': 'ba5142509facbf055d337c9acca9...
+                                     content: 'be a turning point for tackling corruption and bribery within Malaysia. Increased efforts have been ...',
+                                     meta: {'file_path': 'datasets/Malaysia_Corruption_Reports.txt',
+                                            'source_id': 'ba5142509facbf055d337c9acca9...
 document_offset Span	    ExtractedAnswer.Span(start=827, end=920)
 meta            dict	    {'answer_page_number': 1}
-query           str	      'What are the corruption cases in Malaysia?'
+query           str	        'What are the corruption cases in Malaysia?'
 score           float	    0.7954429984092712
-from_dict       method	  Deserialize the object from a dictionary.
-to_dict         method	  Serialize the object to a dictionary.
+from_dict       method	    Deserialize the object from a dictionary.
+to_dict         method	    Serialize the object to a dictionary.
 Span            class	    Span(start: int, end: int)
 
-reader.documents-> score= 0.7954429984092712 , 
-                   data= bribery, extortion, fraud, embezzlement, blackmail, illegal gambling, laundering and nepotism
+reader.answers-> score= 0.7954429984092712 ,
+                 data= bribery, extortion, fraud, embezzlement, blackmail, illegal gambling, laundering and nepotism
 
 generator.replies-> False Question: What is the impact of corruption on the economy of a country?
 
-ExtractiveReader-> ``` <haystack.components.readers.extractive.ExtractiveReader object at 0x7d0474f267d0> reader Inputs:
+
+
+
+
+ExtractiveReader.object->
+``` <haystack.components.readers.extractive.ExtractiveReader object at 0x7d0474f267d0> reader Inputs:
 query:              str
 documents:          List[Document]
 top_k:              Optional[int]
@@ -134,6 +139,15 @@ answers_per_seq:    Optional[int]
 no_answer:          Optional[bool]
 overlap_threshold:  Optional[float] Outputs:
 answers:            List[ExtractedAnswer]
+
+AnswerBuilder.object->
+'answer_builder':
+ - query:             str (available)
+ - replies:           Union[List[str], List[ChatMessage]] (sent by generator)
+ - meta:              Optional[List[Dict[str, Any]]] (available)
+ - documents:         Optional[List[Document]] (available)
+ - pattern:           Optional[str] (available)
+ - reference_pattern: Optional[str] (available)
 
 Documents.object->
 [
@@ -147,7 +161,7 @@ Documents.object->
                           delete_url: "/_stcore/upload_file/ad8a1709-7aa5-4f43-acca-2c1f6a432888/080a2361-14c1-44a9-b521-d21f50b929b1"})"
 ]
 
-Document.description->
+Documents.description->
 Document() contains;
 Base data class containing some data to be queried.
 Can contain text snippets, tables, and file paths to images or audios. Documents can be sorted by score and saved to/from dictionary and JSON.
