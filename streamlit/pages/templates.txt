@@ -86,7 +86,7 @@ complete->
 ]}
 }
 
-ExtractedAnswer->
+ExtractiveReader->
 ExtractedAnswer ExtractedAnswer(query='What are the corruption cases in Malaysia?', 
                                 score=0.7954429984092712, 
                                 data='bribery, extortion, fraud, embezzlement, blackmail, illegal gambling, laundering and nepotism', 
@@ -117,10 +117,10 @@ from_dict       method	    Deserialize the object from a dictionary.
 to_dict         method	    Serialize the object to a dictionary.
 Span            class	    Span(start: int, end: int)
 
-reader.answers-> score= 0.7954429984092712 ,
-                 data= bribery, extortion, fraud, embezzlement, blackmail, illegal gambling, laundering and nepotism
-
 generator.replies-> False Question: What is the impact of corruption on the economy of a country?
+
+reader.itemise-> score= 0.7954429984092712 ,
+                 data= bribery, extortion, fraud, embezzlement, blackmail, illegal gambling, laundering and nepotism
 
 
 
