@@ -115,6 +115,7 @@ def test04():
                                                             "type": uploaded_file.type,
                                                             "size": uploaded_file.size,
                                                             "url": uploaded_file._file_urls})]
+        st.write(content_data)
         st.write(content_data[0])
         st.write(content_data[0].meta["name"])
         st.write(content_data[0].meta["type"])
