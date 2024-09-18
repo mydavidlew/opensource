@@ -176,6 +176,15 @@ def rag_chatbot():
         #                                      huggingface_pipeline_kwargs={"device_map": "auto",
         #                                                                   "model_kwargs": {"torch_dtype": torch.float16}},
         #                                      generation_kwargs={"max_new_tokens": 500, "temperature": 0.5, "do_sample": True})
+        #The LLM we choose is Zephyr 7B Beta, a fine-tuned version of Mistral 7B V.01 that focuses on helpfulness and outperforms many larger models on the MT-Bench and AlpacaEval benchmarks; the model was fine-tuned by the Hugging Face team
+        #generator = HuggingFaceLocalGenerator(model="HuggingFaceH4/zephyr-7b-beta",
+        #                                      task="text-generation",
+        #                                      huggingface_pipeline_kwargs={"device_map": "auto",
+        #                                                                   "model_kwargs": {"load_in_4bit": True,
+        #                                                                                    "bnb_4bit_use_double_quant": True,
+        #                                                                                    "bnb_4bit_quant_type": "nf4",
+        #                                                                                    "bnb_4bit_compute_dtype": torch.bfloat16}},
+        #                                      generation_kwargs={"max_new_tokens": 350})
         generator = HuggingFaceLocalGenerator(model="google/flan-t5-large",
                                               task="text2text-generation",
                                               huggingface_pipeline_kwargs={"device_map": "auto",
