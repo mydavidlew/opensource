@@ -1,4 +1,4 @@
-a1->
+answer_builder.documents->
 {
 "reader":{"answers":[
 0:"ExtractedAnswer(query='What are the corruption cases in Malaysia?', 
@@ -86,7 +86,7 @@ a1->
 ]}
 }
 
-a2->
+reader.documents->
 ExtractedAnswer ExtractedAnswer(query='What are the corruption cases in Malaysia?', 
                                 score=0.7954429984092712, 
                                 data='bribery, extortion, fraud, embezzlement, blackmail, illegal gambling, laundering and nepotism', 
@@ -117,12 +117,12 @@ from_dict       method	  Deserialize the object from a dictionary.
 to_dict         method	  Serialize the object to a dictionary.
 Span            class	    Span(start: int, end: int)
 
-a3-> score= 0.7954429984092712 , 
-     data= bribery, extortion, fraud, embezzlement, blackmail, illegal gambling, laundering and nepotism
+reader.documents-> score= 0.7954429984092712 , 
+                   data= bribery, extortion, fraud, embezzlement, blackmail, illegal gambling, laundering and nepotism
 
-a4-> False Question: What is the impact of corruption on the economy of a country?
+generator.replies-> False Question: What is the impact of corruption on the economy of a country?
 
-b1-> ``` <haystack.components.readers.extractive.ExtractiveReader object at 0x7d0474f267d0> reader Inputs:
+ExtractiveReader-> ``` <haystack.components.readers.extractive.ExtractiveReader object at 0x7d0474f267d0> reader Inputs:
 query:              str
 documents:          List[Document]
 top_k:              Optional[int]
@@ -134,3 +134,15 @@ answers_per_seq:    Optional[int]
 no_answer:          Optional[bool]
 overlap_threshold:  Optional[float] Outputs:
 answers:            List[ExtractedAnswer]
+
+Documents->
+[
+0:"Document(id=bccb21111d93a0599ec191b01c25bb7deb041931f0e0b739e3e9168fc9e6b486, 
+            content: 'b'The case of the 1MDB \nOne of the most well-known (2015) and prominent cases of corruption within Mal'...', 
+            meta: {'name': 'Sample_Text1.txt', 
+                   'type': 'text/plain', 
+                   'size': 628, 
+                   'url': file_id: "080a2361-14c1-44a9-b521-d21f50b929b1"
+                          upload_url: "/_stcore/upload_file/ad8a1709-7aa5-4f43-acca-2c1f6a432888/080a2361-14c1-44a9-b521-d21f50b929b1"
+                          delete_url: "/_stcore/upload_file/ad8a1709-7aa5-4f43-acca-2c1f6a432888/080a2361-14c1-44a9-b521-d21f50b929b1"})"
+]
