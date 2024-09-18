@@ -158,19 +158,19 @@ def get_generative_answer(query_pipeline, query):
     return answer
 
 def test_chatbot():
+    # Sample documents to process
+    content_data = [Document(content="My name is DavidLew and I live in Berlin"),
+                    Document(content="I saw a black horse running in my house"),
+                    Document(content="Germany has many big cities including Berlin")]
+    #
     # In memory document store
     document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
-    # Define a Template Prompt
-    prompt_template = prompt_syntax()
-    #
-    content_data = [Document(content="My name is Wolfgang and I live in Berlin"),
-                    Document(content="I saw a black horse running"),
-                    Document(content="Germany has many big cities")]
-    #
     # Building the Index Pipeline
     indexing_pipeline = index_xpipeline(document_store)
     indexing_pipeline.run(data={"joiner": {"documents": content_data}})
     #
+    # Define a Template Prompt
+    prompt_template = prompt_syntax()
     # Initialize a Generator
     # generator = HuggingFaceLocalGenerator(
     #    model="meta-llama/Meta-Llama-3.1-8B-Instruct",
@@ -187,7 +187,6 @@ def test_chatbot():
         generation_kwargs={"max_new_tokens": 500, "do_sample": True})
     # Start the Generator
     generator.warm_up()
-    #
     # Build the Query Pipeline
     querying_pipeline = query_xpipeline(document_store, prompt_template, generator)
     #
@@ -205,11 +204,13 @@ def test_chatbot():
             truncated_words = words[:4000]
             prompt = ' '.join(truncated_words)
             st.session_state.messages.append({"role": "user", "content": prompt})
+            logging.info(f"[ai] user query: {prompt}")
             st.markdown(prompt)
         with st.chat_message("assistant"):
             try:
                 response = get_generative_answer(querying_pipeline, prompt)
                 st.session_state.messages.append({"role": "assistant", "content": response})
+                logging.info(f"[ai] ai response: {response}")
                 st.markdown(response)
             except Exception as e:
                 logging.error(f"Error: :red[**{e}**]")
@@ -283,6 +284,7 @@ def rag_chatbot():
                     logging.error(f"Error: :red[**{e}**]")
 
 def main():
+    #test_chatbot()
     rag_chatbot()
 
 if __name__ == '__main__':
