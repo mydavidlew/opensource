@@ -135,7 +135,7 @@ no_answer:          Optional[bool]
 overlap_threshold:  Optional[float] Outputs:
 answers:            List[ExtractedAnswer]
 
-Documents->
+Documents.object->
 [
 0:"Document(id=bccb21111d93a0599ec191b01c25bb7deb041931f0e0b739e3e9168fc9e6b486, 
             content: 'b'The case of the 1MDB \nOne of the most well-known (2015) and prominent cases of corruption within Mal'...', 
@@ -146,3 +146,34 @@ Documents->
                           upload_url: "/_stcore/upload_file/ad8a1709-7aa5-4f43-acca-2c1f6a432888/080a2361-14c1-44a9-b521-d21f50b929b1"
                           delete_url: "/_stcore/upload_file/ad8a1709-7aa5-4f43-acca-2c1f6a432888/080a2361-14c1-44a9-b521-d21f50b929b1"})"
 ]
+
+Document.description->
+Document() contains;
+Base data class containing some data to be queried.
+Can contain text snippets, tables, and file paths to images or audios. Documents can be sorted by score and saved to/from dictionary and JSON.
+
+:param id:               Unique identifier for the document. When not set, it's generated based on the Document fields' values.
+:param content:          Text of the document, if the document contains text.
+:param dataframe:        Pandas dataframe with the document's content, if the document contains tabular data.
+:param blob:             Binary data associated with the document, if the document has any binary data associated with it.
+:param meta:             Additional custom metadata for the document. Must be JSON-serializable.
+:param score:            Score of the document. Used for ranking, usually assigned by retrievers.
+:param embedding:        dense vector representation of the document.
+:param sparse_embedding: sparse vector representation of the document.
+
+blob             NoneType None
+content          bytes    b'The case of the 1MDB \nOne of the most well-known (2015) and prominent cases of corruption within Malaysia and globally is that involving the former Prime Minister of Malaysia, Najib Razak, known as the 1 Malaysia Development Fund Bhd (1MDB). This corruption case involved the embezzlement of billi...
+content_type     property Returns the type of the content for the document.
+dataframe        NoneType None
+embedding        NoneType None
+id               str      'bccb21111d93a0599ec191b01c25bb7deb041931f0e0b739e3e9168fc9e6b486'
+meta             dict     {'name': 'Sample_Text1.txt', 
+                           'type': 'text/plain', 
+                           'size': 628, 
+                           'url': file_id: "080a2361-14c1-44a9-b521-d21f50b929b1" 
+                                  upload_url: "/_stcore/upload_file/ad8a1709-7aa5-4f43-acca-2c1f6a432888/080a2361-14c1-44a9-b521-d21f50b929b1" 
+                                  delete_url: "/_stcore/upload_file/ad8a1709-7aa5-4f43-acca-2c1f6a432888/0...
+score            NoneType None
+sparse_embedding NoneType None
+from_dict        method   Creates a new Document object from a dictionary.
+to_dict          method   Converts Document into a dictionary.
