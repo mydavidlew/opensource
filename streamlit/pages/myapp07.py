@@ -7,6 +7,7 @@ import os, logging, shutil
 from pathlib import Path
 from io import StringIO
 from haystack.dataclasses import Document
+from haystack.components.converters import TextFileToDocument
 
 st.set_page_config(page_title="Application #07", page_icon="🪷", layout="wide")
 st.sidebar.title("🪷 Code-Testpad")
@@ -125,4 +126,21 @@ def test04():
     logging.info(f"[ai] uploaded_file: {uploaded_file}")
     logging.info(f"[ai] content_data: {content_data}")
 
-test04()
+def test05():
+    converter = TextFileToDocument()
+    documents = converter.run(sources=["datasets/Sample_Text1.txt", "datasets/Sample_Text2.txt"])
+    document = documents["documents"][0]
+    st.write("documents: ", documents)
+    st.write("document:0: ", document)
+    #
+    document_dict = document.to_dict()
+    document_object = document.from_dict(document_dict)
+    st.write("document:0_dict: ", document_dict)
+    st.write("document:0_object: ", document_object)
+    #
+    document_json = document.to_json()
+    document_object = document.from_json(document_json)
+    st.write("document:0_json: ", document_json)
+    st.write("document:0_object: ", document_object)
+
+test05()
