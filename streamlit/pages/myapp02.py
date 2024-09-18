@@ -148,12 +148,11 @@ def query_xpipeline(document_store, prompt_template, generator):
 
 def get_generative_answer(query_pipeline, query):
     # Let's ask some questions!
-    results = query_pipeline.run({
-        "embedder": {"text": query},
-        "retriever": {"top_k": 5},
-        "prompt_builder": {"query": query},
-        "generator": {"generation_kwargs": {"max_new_tokens": 350}}
-        })
+    data = {"embedder": {"text": query},
+            "retriever": {"top_k": 5},
+            "prompt_builder": {"query": query},
+            "generator": {"generation_kwargs": {"max_new_tokens": 350}}}
+    results = query_pipeline.run(data=data)
     logging.info(f"[ai] generator results: {results}")
     answer = results["generator"]["replies"][0]
     return answer
