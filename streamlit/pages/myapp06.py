@@ -6,8 +6,8 @@ import tempfile as tf
 
 from pathlib import Path
 from datasets import load_dataset
-from haystack.core.pipeline import Pipeline
-from haystack.dataclasses import Document
+from haystack import Pipeline
+from haystack import Document
 from haystack.utils import Secret, ComponentDevice
 from haystack.components.fetchers import LinkContentFetcher
 from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
