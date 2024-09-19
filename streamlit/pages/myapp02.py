@@ -4,9 +4,9 @@ import pandas as pd
 import tempfile as tf
 import torch, time, logging, shutil, os
 
-from haystack.core.pipeline import Pipeline
-from haystack.utils import ComponentDevice
-from haystack.dataclasses import Document
+from haystack import Pipeline
+from haystack import Document
+from haystack.utils import Secret, ComponentDevice
 from haystack.components.fetchers import LinkContentFetcher
 from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
 from haystack.components.converters import HTMLToDocument, TextFileToDocument, MarkdownToDocument, PyPDFToDocument
