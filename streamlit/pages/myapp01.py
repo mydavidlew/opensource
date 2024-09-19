@@ -121,13 +121,13 @@ def prompt_syntax():
 def index_xpipeline(document_store):
     # Building the Index Pipeline
     indexing_pipeline = Pipeline()
-    indexing_pipeline.add_component(name="joiner", instance=DocumentJoiner())
+    #indexing_pipeline.add_component(name="joiner", instance=DocumentJoiner())
     indexing_pipeline.add_component(name="cleaner", instance=DocumentCleaner())
     indexing_pipeline.add_component(name="splitter", instance=DocumentSplitter(split_by="word", split_length=200, split_overlap=50))
     indexing_pipeline.add_component(name="embedder", instance=SentenceTransformersDocumentEmbedder(model=embedder_model, device=device_model, progress_bar=True))
     indexing_pipeline.add_component(name="writer", instance=DocumentWriter(document_store=document_store, policy=DuplicatePolicy.SKIP))
     # connect the components
-    indexing_pipeline.connect("joiner.documents", "cleaner.documents")
+    #indexing_pipeline.connect("joiner.documents", "cleaner.documents")
     indexing_pipeline.connect("cleaner.documents", "splitter.documents")
     indexing_pipeline.connect("splitter.documents", "embedder.documents")
     indexing_pipeline.connect("embedder.documents", "writer.documents")
@@ -167,7 +167,8 @@ def test_chatbot():
     document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
     # Building the Index Pipeline
     indexing_pipeline = index_xpipeline(document_store)
-    indexing_pipeline.run(data={"joiner": {"documents": content_data}})
+    #indexing_pipeline.run(data={"joiner": {"documents": content_data}})
+    indexing_pipeline.run(data={"cleaner": {"documents": content_data}})
     #
     # Define a Template Prompt
     prompt_template = prompt_syntax()
@@ -225,7 +226,8 @@ def rag_chatbot():
         document_store = InMemoryDocumentStore(embedding_similarity_function="cosine")
         # Building the Index Pipeline
         indexing_pipeline = index_xpipeline(document_store)
-        indexing_pipeline.run(data={"joiner": {"documents": content_data}})
+        #indexing_pipeline.run(data={"joiner": {"documents": content_data}})
+        indexing_pipeline.run(data={"cleaner": {"documents": content_data}})
         #
         # Define a Template Prompt
         prompt_template = prompt_syntax()
