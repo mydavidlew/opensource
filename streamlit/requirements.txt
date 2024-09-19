@@ -1,16 +1,26 @@
+streamlit
+streamlit-extras
+streamlit-faker
+streamlit-card
+streamlit-keyup
+streamlit-embedcode
+streamlit-image-coordinates
+streamlit-camera-input-live
+streamlit-toggle-switch
+streamlit-vertical-slider
+haystack-ai
+farm-haystack
+markdownlit
+markdown-it-py
 accelerate
 bitsandbytes
 trafilatura
+datasets
 openpyxl
-streamlit
 pypdf
 pymupdf
 pymupdf4llm
-markdownlit
-markdown-it-py
 mdit-plain
-datasets
-haystack-ai
 torch --index-url https://download.pytorch.org/whl/cpu
 torchvision --index-url https://download.pytorch.org/whl/cpu
 torchaudio --index-url https://download.pytorch.org/whl/cpu
@@ -21,20 +31,5 @@ huggingface-hub
 sentence-transformers
 openai
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+farm-haystack[colab,preprocessing,inference]
+farm-haystack-text2speech
