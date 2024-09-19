@@ -177,14 +177,19 @@ def rag_qna_single():
     #pipe["answer_builder"]["answers"][0].data/query/documents/meta
 
     st.write(":red[**complete->**]", answer)
-    st.write(":red[**ExtractiveReader->**]", answer["reader"]["answers"][0])
     st.write(":red[**generator.replies->**]", answer["generator"]["replies"][0])
     st.write(":red[**reader.itemise->**] :blue[score=]", answer["reader"]["answers"][0].score, ":blue[, data=]", answer["reader"]["answers"][0].data)
 
-    st.write(":red[**retriever->**]", answer["retriever"])
-    st.write(":red[**reader->**]", answer["reader"])
-    st.write(":red[**generator->**]", answer["generator"])
-    st.write(":red[**answer_builder->**]", answer["answer_builder"])
+    st.write(":green[**(1)retriever->**]", answer["retriever"])
+    st.write(":green[**(1)retriever.object->**]", answer["retriever"]["documents"][0])
+    st.write(":green[**(2)reader->**]", answer["reader"])
+    st.write(":green[**(2)reader.object->**]", answer["reader"]["answers"][0])
+    st.write(":green[**(3)generator->**]", answer["generator"])
+    st.write(":green[**(3)generator.object->**]", answer["generator"]["replies"][0])
+    st.write(":green[**(4)answer_builder->**]", answer["answer_builder"])
+    st.write(":green[**(4)answer_builder.object->**]", answer["answer_builder"]["answers"][0])
+    st.write(":green[**(5)prompt_builder->**]", answer["prompt_builder"])
+    st.write(":green[**(5)prompt_builder.object->**]", answer["prompt_builder"]["prompt"])
 
     answer_builder_dict = (answer["answer_builder"]["answers"][0]).to_dict()
     answer_builder_object = (answer["answer_builder"]["answers"][0]).from_dict(answer_builder_dict)
