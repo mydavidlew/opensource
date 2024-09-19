@@ -175,6 +175,7 @@ def rag_qna_single():
     #pipe["reader"]["answers"][0].query/score/data/document/meta
     #pipe["generator"]["replies"][0]
     #pipe["answer_builder"]["answers"][0].data/query/documents/meta
+    #pipe["prompt_builder"]["prompt"]
 
     st.write(":red[**complete->**]", answer)
     st.write(":red[**generator.replies->**]", answer["generator"]["replies"][0])
