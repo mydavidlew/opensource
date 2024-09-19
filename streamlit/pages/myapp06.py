@@ -197,6 +197,25 @@ def rag_qna_single():
     st.write(":blue[**answer_builder:0_dict->**]", answer_builder_dict)
     st.write(":blue[**answer_builder:0_object->**]", answer_builder_object)
 
+def entity_extractor():
+    # Get the data from a specific file only
+    filename = "datasets/Malaysia_Corruption_Reports.txt"
+    with open(filename, "r", encoding="utf-8") as filehandler:
+        dataset = filehandler.read()
+    filehandler.close()
+    # dataset = load_dataset("text", data_files=filename, split="train")
+    documents = [Document(content=dataset, meta={"name": filename})]
+    logging.info(f"[ai] documents information: {documents}")
+    #
+    #extractor = NamedEntityExtractor(backend="hugging_face", model="dslim/bert-base-NER")
+    extractor = NamedEntityExtractor(backend="spacy", model="en_core_web_sm")
+    extractor.warm_up()
+    results = extractor.run(documents=documents)
+    annotations = [NamedEntityExtractor.get_stored_annotations(doc) for doc in results["documents"]]
+    st.write(results)
+    st.write(documents)
+    st.write(annotations)
+
 def rag_qna_multiple():
     uploaded_files = st.file_uploader(":blue[**Choose multiple text/pdf files**]", type=['txt', 'pdf'], accept_multiple_files=True)
     if uploaded_files is not None:
@@ -224,16 +243,17 @@ def rag_qna_multiple():
 if __name__ == '__main__':
     #if start_btn:
         tab01, tab02, tab03, tab04, tab05 = st.tabs(
-            ["👻 RAG-Q&A-01", "👻 RAG-Q&A-02", "👻 RAG-Q&A-03", "👻 RAG-Q&A-multiple", "👻 RAG-Q&A-single"])
+            ["👻 RAG-Q&A-01", "👻 RAG-Q&A-02", "👻 RAG-Entity-Extractor", "👻 RAG+Q&A-multiple", "👻 RAG+Q&A-single"])
         with tab01:
             st.subheader("RAG-Q&A-01")
         with tab02:
             st.subheader("RAG-Q&A-02")
         with tab03:
-            st.subheader("RAG-Q&A-03")
+            st.subheader("RAG-Entity-Extractor")
+            entity_extractor()
         with tab04:
-            st.subheader("RAG-Q&A_multiple_content")
+            st.subheader("RAG+Q&A_multiple_content")
             rag_qna_multiple()
         with tab05:
-            st.subheader("RAG-Q&A_single_content")
+            st.subheader("RAG+Q&A_single_content")
             rag_qna_single()
