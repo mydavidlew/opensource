@@ -186,6 +186,11 @@ def rag_qna_single():
     st.write(":red[**generator->**]", answer["generator"])
     st.write(":red[**answer_builder->**]", answer["answer_builder"])
 
+    answer_builder_dict = (answer["answer_builder"]["answers"][0]).to_dict()
+    answer_builder_object = (answer["answer_builder"]["answers"][0]).from_dict(answer_builder_dict)
+    st.write(":blue[**answer_builder:0_dict->**]", answer_builder_dict)
+    st.write(":blue[**answer_builder:0_object->**]", answer_builder_object)
+
 def rag_qna_multiple():
     uploaded_files = st.file_uploader(":blue[**Choose multiple text/pdf files**]", type=['txt', 'pdf'], accept_multiple_files=True)
     if uploaded_files is not None:
