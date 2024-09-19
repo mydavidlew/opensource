@@ -6,7 +6,7 @@ import os, logging, shutil
 
 from pathlib import Path
 from io import StringIO
-from haystack.dataclasses import Document
+from haystack import Document
 from haystack.components.converters import TextFileToDocument
 
 st.set_page_config(page_title="Application #07", page_icon="🪷", layout="wide")
