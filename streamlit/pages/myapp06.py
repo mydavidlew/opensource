@@ -114,7 +114,7 @@ def rag_qna_single():
     # NER of the uploaded documents
     nerdocuments = indexing_results["extractor"]["documents"]
     annotations = [NamedEntityExtractor.get_stored_annotations(doc) for doc in nerdocuments]
-    st.write(":blue[**extractor.documents->**]", indexing_results["extractor"]["documents"])
+    st.write(":blue[**extractor.documents->**]", nerdocuments)
     st.write(":blue[**extractor.annotations->**]", annotations)
 # 2]
 
