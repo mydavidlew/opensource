@@ -1,7 +1,7 @@
 import helper.config as cfg
 import streamlit as st
 import pandas as pd
-import os, logging, torch
+import os, logging, torch, spacy
 import tempfile as tf
 
 from pathlib import Path
@@ -42,6 +42,7 @@ if "HF_API_TOKEN" not in os.environ:
     os.environ["HF_TOKEN"] = cfg.dlreadtoken_key
 
 def rag_qna_single():
+# [1 load the documents or files
     # All filename in a specific folder
     filefolder = "datasets/"
     foldername = list(Path(filefolder).glob("**/*"))
@@ -67,21 +68,17 @@ def rag_qna_single():
     #documents = [Document(content=doc["content"], meta=doc["meta"]) for doc in dataset]
 
     st.write(f":green[dataset:] {documents[0].meta['name']}")
+# 1]
 
-    template = """Given these documents, answer the question.
-        Context:
-        {% for doc in documents %}
-        Document: {{ loop.index }} - File: {{ doc.meta['file_path'] }}
-        {{ doc.content }}
-        {% endfor %}
-        Question: {{query}}
-        Answer: """
-    prompt_builder = PromptBuilder(template=template)
-
+# [2 creation of indexing_pipeline
     model_embedder = "sentence-transformers/all-mpnet-base-v2" # better & larger model than below
     #model_embedder = "sentence-transformers/multi-qa-mpnet-base-dot-v1"
     #device_embedder = ComponentDevice.from_str("cuda:0") # train using accelerate GPU
     device_embedder = None
+
+    extractor_hf = NamedEntityExtractor(backend="hugging_face", model="dslim/bert-base-NER")
+    extractor_sp = NamedEntityExtractor(backend="spacy", model="en_core_web_sm")
+    EntityExtractor = extractor_hf
 
     document_store = InMemoryDocumentStore()
     indexing_pipeline = Pipeline()
@@ -94,6 +91,7 @@ def rag_qna_single():
     indexing_pipeline.add_component(name="splitter", instance=DocumentSplitter(split_by="word", split_length=200, split_overlap=50))
     indexing_pipeline.add_component(name="embedder", instance=SentenceTransformersDocumentEmbedder(model=model_embedder, device=device_embedder, progress_bar=True))
     indexing_pipeline.add_component(name="writer", instance=DocumentWriter(document_store=document_store, policy=DuplicatePolicy.SKIP))
+    indexing_pipeline.add_component(name="extractor", instance=EntityExtractor)
     #indexing_pipeline.connect("file_type_router.text/plain", "plain_converter.sources")
     #indexing_pipeline.connect("file_type_router.text/markdown", "markdown_converter.sources")
     #indexing_pipeline.connect("file_type_router.application/pdf", "pypdf_converter.sources")
@@ -104,13 +102,36 @@ def rag_qna_single():
     indexing_pipeline.connect("cleaner", "splitter")
     indexing_pipeline.connect("splitter", "embedder")
     indexing_pipeline.connect("embedder", "writer")
+    indexing_pipeline.connect("cleaner", "extractor")
+    #
+    #indexing_results = indexing_pipeline.run({"file_type_router": {"sources": foldername}})
+    #indexing_results = indexing_pipeline.run(data={"joiner": {"documents": documents}})
+    indexing_results = indexing_pipeline.run(data={"plain_converter": {"sources": filelist}},
+                                             include_outputs_from={"embedder", "writer", "extractor"})
+    st.write(":blue[**indexing_results->**]", indexing_results)
+    st.write(":blue[**writer.counts->**]", indexing_results["writer"]["documents_written"])
+    #
+    # NER of the uploaded documents
+    nerdocuments = indexing_results["extractor"]["documents"]
+    annotations = [NamedEntityExtractor.get_stored_annotations(doc) for doc in nerdocuments]
+    st.write(":blue[**extractor.documents->**]", indexing_results["extractor"]["documents"])
+    st.write(":blue[**extractor.annotations->**]", annotations)
+# 2]
 
-    #indexing_pipeline.run({"file_type_router": {"sources": foldername}})
-    indexing_pipeline.run({"plain_converter": {"sources": filelist}})
-    #indexing_pipeline.run(data={"joiner": {"documents": documents}})
-
+# [3 creation of querying_pipeline
+    template = """Given these documents, answer the question.
+        Context:
+        {% for doc in documents %}
+        Document: {{ loop.index }} - File: {{ doc.meta['file_path'] }}
+        {{ doc.content }}
+        {% endfor %}
+        Question: {{query}}
+        Answer: """
+    prompt_builder = PromptBuilder(template=template)
+    #
     reader_answer = ExtractiveReader(no_answer=False)
     reader_answer.warm_up()
+    #
     #generator = OpenAIGenerator(model="gpt-4o", api_key=Secret.from_token(openai_key))
     #generator1 = HuggingFaceLocalGenerator(
     #        model="HuggingFaceTB/SmolLM-1.7B-Instruct",
@@ -145,7 +166,9 @@ def rag_qna_single():
     # Extractive QA pipeline will consist of three components: an embedder, retriever, and reader.
     # Generative QA pipeline will consist of four components: an embedder, retriever, prompt_builder, and generator.
     # answer_builder component can be used by both Extractive and Generative QA pipeline to construct an output
+# 3]
 
+# [4 ask a question to the RAG model
     query1 = "List of corruption cases in Malaysia?"
     query2 = "Who was Pliny the Elder?"
     query = query1
@@ -161,8 +184,11 @@ def rag_qna_single():
             "generator": {"generation_kwargs": {"max_new_tokens": 350}},
             "answer_builder": {"query": query}}
     #data["reader"] = {"query": query, "top_k": 3}
-    answer = querying_pipeline.run(data=data,
-                                   include_outputs_from = {"retriever", "prompt_builder", "reader", "generator", "answer_builder"} )
+    querying_results = querying_pipeline.run(data=data,
+                                             include_outputs_from={"retriever", "prompt_builder", "reader", "generator", "answer_builder"})
+    answer = querying_results
+    st.write(":red[**querying_results->**]", answer)
+# 4]
 
     with open("datasets/indexing_pipeline.yml", "w") as ifile:
         indexing_pipeline.dump(ifile)
@@ -178,7 +204,6 @@ def rag_qna_single():
     #pipe["answer_builder"]["answers"][0].data/query/documents/meta
     #pipe["prompt_builder"]["prompt"]
 
-    st.write(":red[**complete->**]", answer)
     st.write(":red[**generator.replies->**]", answer["generator"]["replies"][0])
     st.write(":red[**reader.itemise->**] :blue[score=]", answer["reader"]["answers"][0].score, ":blue[, data=]", answer["reader"]["answers"][0].data)
 
@@ -208,20 +233,23 @@ def entity_extractor():
     documents = [Document(content=dataset, meta={"name": filename})]
     logging.info(f"[ai] documents information: {documents}")
     #
-    #extractor = NamedEntityExtractor(backend="hugging_face", model="dslim/bert-base-NER")
-    extractor = NamedEntityExtractor(backend="spacy", model="en_core_web_sm")
+    extractor_hf = NamedEntityExtractor(backend="hugging_face", model="dslim/bert-base-NER")
+    extractor_sp = NamedEntityExtractor(backend="spacy", model="en_core_web_sm")
+    extractor = extractor_hf
     extractor.warm_up()
     results = extractor.run(documents=documents)
     annotations = [NamedEntityExtractor.get_stored_annotations(doc) for doc in results["documents"]]
-    st.write(results)
-    st.write(documents)
-    st.write(annotations)
+    #
+    st.write("documents: ", documents)
+    st.write("result: ", results)
+    st.write("result.documents: ", results["documents"])
+    st.write("result.annotations: ", annotations)
 
 def rag_qna_multiple():
     uploaded_files = st.file_uploader(":blue[**Choose multiple text/pdf files**]", type=['txt', 'pdf'], accept_multiple_files=True)
     if uploaded_files is not None:
         # To get file location for each file
-        st.write("-->", uploaded_files)
+        st.write(uploaded_files)
         temp_dir = tf.mkdtemp()
         content_files = []
         files_list = []
@@ -234,8 +262,8 @@ def rag_qna_multiple():
             with open(mode="w+b", file=temp_file) as fn:
                 fn.write(upload_file.getvalue())
                 fn.close()
-        if content_files is not None:
-            logging.info(f"[ai] filelist information: {content_files}")
+        if files_list is not None:
+            logging.info(f"[ai] filelist information: {files_list}")
             st.write(f":green[dataset1:] {content_files}")
             st.write(f":green[dataset2:] {files_list}")
     else:
