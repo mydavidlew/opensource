@@ -2,7 +2,7 @@ import helper.config as cfg
 import streamlit as st
 import tempfile as tf
 import pandas as pd
-import os, logging, shutil
+import os, logging, shutil, spacy
 
 from pathlib import Path
 from io import StringIO
@@ -15,6 +15,9 @@ st.sidebar.markdown(
     """This is a testpad to generates baseline library. Enjoy!"""
 )
 st.sidebar.image(image="helper/eco-friendly.png", caption=None, use_column_width="always")
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
 st.write('Absolute path of file:  ', os.path.abspath(__file__))
 st.write('Absolute directoryname: ', os.path.dirname(os.path.abspath(__file__)))
@@ -143,4 +146,35 @@ def test05():
     st.write("document:0_json: ", document_json)
     st.write("document:0_object: ", document_object)
 
-test05()
+from spacy import displacy
+import spacy_streamlit as ss
+
+def test06():
+    text = "I am david lew living in puchong like to go travelling in thailand and work at google since 2020"
+    nlp = spacy.load("en_core_web_sm")
+    simi = spacy.load("en_core_web_lg")
+    doc = nlp(text=text)
+    logging.info(f"[ai] nlp-doc: {doc}")
+    st.markdown(f"nlp-doc-> {doc}")
+    #
+    showme = displacy.render(doc, style="ent")
+    st.html(showme)
+    #
+    ss.visualize_parser(doc)
+    ss.visualize_ner(doc, labels=nlp.get_pipe("ner").labels)
+    ss.visualize_textcat(doc)
+    ss.visualize_similarity(simi, ("cat", "dog"))
+
+def test07():
+    filename = "datasets/Malaysia_Corruption_Reports.txt"
+    with open(filename, "r", encoding="utf-8") as filehandler:
+        dataset = filehandler.read()
+    filehandler.close()
+
+    text = "I am david lew living in puchong for 2 years like to go travelling in thailand to buy 200 bath shirts and work at google since 2020"
+    models =  ["en_core_web_sm", "en_core_web_md"]
+    visual = ["ner", "textcat"]
+
+    ss.visualize(models=models, default_text=dataset, visualizers=visual, show_logo=False)
+
+test06()
