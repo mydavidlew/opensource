@@ -1,15 +1,18 @@
 streamlit
-streamlit-extras
-streamlit-faker
-streamlit-card
-streamlit-keyup
-streamlit-embedcode
-streamlit-image-coordinates
-streamlit-camera-input-live
-streamlit-toggle-switch
-streamlit-vertical-slider
+#streamlit-extras
+#streamlit-faker
+#streamlit-card
+#streamlit-keyup
+#streamlit-embedcode
+#streamlit-image-coordinates
+#streamlit-camera-input-live
+#streamlit-toggle-switch
+#streamlit-vertical-slider
 haystack-ai
-farm-haystack
+haystack-experimental
+#farm-haystack
+#farm-haystack[colab,preprocessing,inference]
+#farm-haystack-text2speech
 markdownlit
 markdown-it-py
 accelerate
@@ -17,6 +20,11 @@ bitsandbytes
 trafilatura
 datasets
 openpyxl
+spacy # run "spacy info" or "spacy validate"
+spacy-streamlit
+#python3 -m spacy download en_core_web_sm   # ner model
+#python3 -m spacy download en_core_web_md   # ner model
+#python3 -m spacy download en_core_web_lg   # similarity model
 pypdf
 pymupdf
 pymupdf4llm
@@ -30,6 +38,3 @@ transformers
 huggingface-hub
 sentence-transformers
 openai
-
-farm-haystack[colab,preprocessing,inference]
-farm-haystack-text2speech
