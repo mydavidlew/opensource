@@ -24,8 +24,8 @@ spacy # run "spacy info" or "spacy validate"
 spacy-streamlit
 #python3 -m spacy download en_core_web_sm   # ner model small
 #python3 -m spacy download en_core_web_md   # ner model medium
+#python3 -m spacy download en_core_web_lg   # ner model large
 #python3 -m spacy download en_core_web_trf  # ner model with transformer
-#python3 -m spacy download en_core_web_lg   # similarity model
 pypdf
 pymupdf
 pymupdf4llm
