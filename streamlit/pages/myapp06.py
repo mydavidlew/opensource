@@ -19,6 +19,7 @@ from haystack.components.joiners import DocumentJoiner
 from haystack.components.builders import AnswerBuilder, PromptBuilder
 from haystack.components.preprocessors import DocumentSplitter, DocumentCleaner
 from haystack.components.generators import OpenAIGenerator, HuggingFaceLocalGenerator
+from haystack.components.extractors import NamedEntityExtractor, NamedEntityAnnotation
 from haystack.components.writers import DocumentWriter
 from haystack.document_stores.types import DuplicatePolicy
 from haystack.document_stores.in_memory import InMemoryDocumentStore
