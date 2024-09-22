@@ -193,7 +193,7 @@ def test_chatbot():
     querying_pipeline = query_xpipeline(document_store, prompt_template, generator)
     #
     if "messages" not in st.session_state:
-        st.session_state.messages = []
+        st.session_state.messages = [{"role": "assistant", "content": "How can I help you?"}]
 
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -256,7 +256,7 @@ def rag_chatbot():
         querying_pipeline = query_xpipeline(document_store, prompt_template, generator)
         #
         if "messages" not in st.session_state:
-            st.session_state.messages = []
+            st.session_state.messages = [{"role": "assistant", "content": "How can I help you?"}]
 
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
@@ -268,9 +268,9 @@ def rag_chatbot():
                 words = prompt.split()
                 truncated_words = words[:4000]
                 prompt = ' '.join(truncated_words)
-                st.session_state.messages.append({"role": "user", "content": prompt})
                 logging.info(f"[ai] user query: {prompt}")
-                st.write(prompt)
+                st.session_state.messages.append({"role": "user", "content": prompt})
+                st.markdown(prompt) # st.chat_message("user").markdown(prompt)
             # get_generative_answer("Who won the Best Picture Award in 2024?")
             # get_generative_answer("What was the box office performance of the Best Picture nominees?")
             # get_generative_answer("What was the reception of the ceremony")
@@ -280,9 +280,9 @@ def rag_chatbot():
             with st.chat_message("assistant"):
                 try:
                     response = get_generative_answer(querying_pipeline, prompt)
-                    st.session_state.messages.append({"role": "assistant", "content": response})
                     logging.info(f"[ai] ai response: {response}")
-                    st.write(response)
+                    st.session_state.messages.append({"role": "assistant", "content": response})
+                    st.markdown(response) # st.chat_message("assistant").markdown(response)
                 except Exception as e:
                     logging.error(f"Error: :red[**{e}**]")
 
