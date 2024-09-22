@@ -28,7 +28,7 @@ st.sidebar.markdown(
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
 if "OPENAI_API_KEY" not in os.environ:
-    os.environ["OPENAI_API_KEY"] = cfg.Application_key
+    os.environ["OPENAI_API_KEY"] = cfg.openai_key
 if "HF_API_TOKEN" not in os.environ:
     os.environ["HF_API_TOKEN"] = cfg.dlreadtoken_key
     os.environ["HF_TOKEN"] = cfg.dlreadtoken_key
@@ -40,24 +40,22 @@ def chatgpt():
         st.session_state["openai_model"] = "gpt-3.5-turbo"
 
     if "messages" not in st.session_state:
-        st.session_state.messages = []
+        st.session_state.messages = [{"role": "user", "content": "How can i help you?"}]
 
     for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
-            st.markdown(message["content"])
+        st.chat_message(message["role"]).write(message["content"])
 
     if prompt := st.chat_input("What is up?"):
         with st.chat_message("user"):
-            st.markdown(prompt)
+            st.write(prompt)
             st.session_state.messages.append({"role": "user", "content": prompt})
 
         with st.chat_message("assistant"):
             try:
-                stream = client.chat.completions.create(
-                    model=st.session_state["openai_model"],
-                    messages=[{"role": m["role"], "content": m["content"]}
-                              for m in st.session_state.messages],
-                    stream=True,)
+                stream = client.chat.completions.create(model=st.session_state["openai_model"],
+                                                        messages=[{"role": m["role"], "content": m["content"]}
+                                                                  for m in st.session_state.messages],
+                                                        stream=True)
                 response = st.write_stream(stream)
                 st.session_state.messages.append({"role": "assistant", "content": response})
             except Exception as e:
@@ -100,8 +98,7 @@ def get_generative_answer(query_pipeline, query):
   results = query_pipeline.run({
       "text_embedder": {"text": query},
       "prompt_builder": {"query": query}
-    }
-  )
+    })
   answer = results["generator"]["replies"][0]
   return answer
 
@@ -138,8 +135,6 @@ def ragchat():
         # RAF prompt template
         prompt_template = """
         <|begin_of_text|><|start_header_id|>user<|end_header_id|>
-
-
         Using the information contained in the context, give a comprehensive answer to the question.
         If the answer cannot be deduced from the context, do not give an answer.
 
@@ -150,8 +145,6 @@ def ragchat():
           Question: {{query}}<|eot_id|>
 
         <|start_header_id|>assistant<|end_header_id|>
-
-
         """
         prompt_builder = PromptBuilder(template=prompt_template)
         #
