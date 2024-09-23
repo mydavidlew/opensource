@@ -120,7 +120,7 @@ def rag_qna_single():
     with st.expander("extractor_results"):
         st.write(":blue[**extractor.documents->**]", nerdocuments, "consist of: ", len(nerdocuments), " documents")
         st.write(":blue[**extractor.annotations->**]", annotations)
-    with st.expander("extractor_visualise"):
+    with st.expander(f"extractor_visualise: {nerdocuments[0].meta['file_path']}"):
         nlp_object = {} # Dictionary in keys & values pair
         nlp_entity = [] # List of objects
         nlp_object.update({"text": nerdocuments[0].content})
