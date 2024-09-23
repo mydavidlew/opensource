@@ -123,11 +123,12 @@ def rag_qna_single():
     with st.expander(f"extractor_visualise: {nerdocuments[0].meta['file_path']}"):
         nlp_object = {} # Dictionary in keys & values pair
         nlp_entity = [] # List of objects
+        entity_list = nerdocuments[0].meta["named_entities"]
+        for i in range(0, len(entity_list)):
+            nlp_entity.append({'start': entity_list[i].start,
+                               'end': entity_list[i].end,
+                               'label': entity_list[i].entity})
         nlp_object.update({"text": nerdocuments[0].content})
-        for i in range(0, len(nerdocuments[0].meta["named_entities"])):
-            nlp_entity.append({'start': nerdocuments[0].meta["named_entities"][i].start,
-                               'end': nerdocuments[0].meta["named_entities"][i].end,
-                               'label': nerdocuments[0].meta["named_entities"][i].entity})
         nlp_object.update({"ents": nlp_entity})
         st.html(displacy.render(nlp_object, manual=True, style="ent"))
 # 2]
