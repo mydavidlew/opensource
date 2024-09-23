@@ -5,6 +5,7 @@ import os, logging, torch, spacy
 import tempfile as tf
 
 from pathlib import Path
+from spacy import displacy
 from datasets import load_dataset
 from haystack import Pipeline
 from haystack import Document
@@ -103,7 +104,7 @@ def rag_qna_single():
     indexing_pipeline.connect("cleaner", "splitter")
     indexing_pipeline.connect("splitter", "embedder")
     indexing_pipeline.connect("embedder", "writer")
-    indexing_pipeline.connect("cleaner", "extractor")
+    indexing_pipeline.connect("joiner", "extractor")
     #
     #indexing_results = indexing_pipeline.run({"file_type_router": {"sources": foldername}})
     #indexing_results = indexing_pipeline.run(data={"joiner": {"documents": documents}})
@@ -119,6 +120,16 @@ def rag_qna_single():
     with st.expander("extractor_results"):
         st.write(":blue[**extractor.documents->**]", nerdocuments, "consist of: ", len(nerdocuments), " documents")
         st.write(":blue[**extractor.annotations->**]", annotations)
+    with st.expander("extractor_visualise"):
+        nlp_object = {} # Dictionary in keys & values pair
+        nlp_entity = [] # List of objects
+        nlp_object.update({"text": nerdocuments[0].content})
+        for i in range(0, len(nerdocuments[0].meta["named_entities"])):
+            nlp_entity.append({'start': nerdocuments[0].meta["named_entities"][i].start,
+                               'end': nerdocuments[0].meta["named_entities"][i].end,
+                               'label': nerdocuments[0].meta["named_entities"][i].entity})
+        nlp_object.update({"ents": nlp_entity})
+        st.html(displacy.render(nlp_object, manual=True, style="ent"))
 # 2]
 
 # [3 creation of querying_pipeline
