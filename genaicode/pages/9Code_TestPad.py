@@ -193,15 +193,16 @@ def test07():
 def test08():
     converter = TextFileToDocument()
     documents = converter.run(sources=["datasets/Sample_Text1.txt", "datasets/Sample_Text2.txt"])
-    st.write("documents-> ", documents)
-    st.write("documents[]-> ", documents["documents"][0].content)
-    template = """'text': '{{ documents['documents'][0].content }}',\
-                  'ents': [{{documents['documents'][0].meta.file_path}},\
-                           {{documents['documents'][0].meta.file_path}},\
-                           {{documents['documents'][0].meta.file_path}}\
-                          ]\
+    st.write("documents-> ", documents, "total dosuments is ", len(documents["documents"]))
+    st.write("documents[]-> ", [doc.content for doc in documents["documents"]])
+    template = """{% for doc in documents["documents"] %}
+                  'text': '{{doc.content}}',
+                  'ents': [{{doc.meta['file_path']}},
+                           {{doc.meta['file_path']}},
+                           {{doc.meta['file_path']}}]
+                  {% endfor %}
                   """
-    adapter = OutputAdapter(template=template, output_type=tuple)
+    adapter = OutputAdapter(template=template, output_type=dict)
     result = adapter.run(documents=documents)
 
     st.write("result-> ", result)
