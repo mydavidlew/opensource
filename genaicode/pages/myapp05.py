@@ -1,9 +1,8 @@
 import helper.config as cfg
 import streamlit as st
 import pandas as pd
-import torch, logging, random, time, os
+import logging, random, time, os
 
-from openai import OpenAI
 from haystack import Pipeline
 from haystack import Document
 from haystack.utils import Secret, ComponentDevice
@@ -18,7 +17,7 @@ from haystack.components.writers import DocumentWriter
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 
 st.set_page_config(page_title="Application #05", page_icon="🪻", layout="wide")
-st.sidebar.title("🪻 AI Chatbots")
+st.sidebar.title("🪻 Simple Code")
 st.sidebar.markdown(
     """This demo illustrates a combination of different AI chatbots. Try with different
     combination of AI python frameworks with Streamlit platform. Enjoy!"""
@@ -27,174 +26,42 @@ st.sidebar.markdown(
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 
-if "OPENAI_API_KEY" not in os.environ:
-    os.environ["OPENAI_API_KEY"] = cfg.openai_key
-if "HF_API_TOKEN" not in os.environ:
-    os.environ["HF_API_TOKEN"] = cfg.dlreadtoken_key
-    os.environ["HF_TOKEN"] = cfg.dlreadtoken_key
+urls = [
+    "https://techcrunch.com/2023/04/27/pinecone-drops-100m-investment-on-750m-valuation-as-vector-database-demand-grows/",
+    "https://techcrunch.com/2023/04/27/replit-funding-100m-generative-ai/",
+    "https://www.cnbc.com/2024/06/12/mistral-ai-raises-645-million-at-a-6-billion-valuation.html",
+    "https://techcrunch.com/2024/01/23/qdrant-open-source-vector-database/",
+    "https://www.intelcapital.com/anyscale-secures-100m-series-c-at-1b-valuation-to-radically-simplify-scaling-and-productionizing-ai-applications/",
+    "https://techcrunch.com/2023/04/28/openai-funding-valuation-chatgpt/",
+    "https://techcrunch.com/2024/03/27/amazon-doubles-down-on-anthropic-completing-its-planned-4b-investment/",
+    "https://techcrunch.com/2024/01/22/voice-cloning-startup-elevenlabs-lands-80m-achieves-unicorn-status/",
+    "https://techcrunch.com/2023/08/24/hugging-face-raises-235m-from-investors-including-salesforce-and-nvidia",
+    "https://www.prnewswire.com/news-releases/ai21-completes-208-million-oversubscribed-series-c-round-301994393.html",
+    "https://techcrunch.com/2023/03/15/adept-a-startup-training-ai-to-use-existing-software-and-apis-raises-350m/",
+    "https://www.cnbc.com/2023/03/23/characterai-valued-at-1-billion-after-150-million-round-from-a16z.html",
+]
+from haystack.components.fetchers import LinkContentFetcher
+from haystack.components.converters import HTMLToDocument
 
-def chatgpt():
-    client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
-
-    if "openai_model" not in st.session_state:
-        st.session_state["openai_model"] = "gpt-3.5-turbo"
-
-    if "messages" not in st.session_state:
-        st.session_state.messages = [{"role": "user", "content": "How can i help you?"}]
-
-    for message in st.session_state.messages:
-        st.chat_message(message["role"]).write(message["content"])
-
-    if prompt := st.chat_input("What is up?"):
-        with st.chat_message("user"):
-            st.write(prompt)
-            st.session_state.messages.append({"role": "user", "content": prompt})
-
-        with st.chat_message("assistant"):
-            try:
-                stream = client.chat.completions.create(model=st.session_state["openai_model"],
-                                                        messages=[{"role": m["role"], "content": m["content"]}
-                                                                  for m in st.session_state.messages],
-                                                        stream=True)
-                response = st.write_stream(stream)
-                st.session_state.messages.append({"role": "assistant", "content": response})
-            except Exception as e:
-                logging.info(f"Error: :red[**{e}**]")
-                st.write(f"Error: :red[**{e}**]")
-
-def simplechat():
-    fetcher = LinkContentFetcher()
-    converter = HTMLToDocument()
-    prompt_template = """
-    According to the contents of this website:
-    {% for document in documents %}
-      {{document.content}}
-    {% endfor %}
-    Answer the given question: {{query}}
-    Answer:
-    """
-    prompt_builder = PromptBuilder(template=prompt_template)
-    llm = OpenAIGenerator()
-
-    pipeline = Pipeline()
-    pipeline.add_component("fetcher", fetcher)
-    pipeline.add_component("converter", converter)
-    pipeline.add_component("prompt", prompt_builder)
-    pipeline.add_component("llm", llm)
-
-    pipeline.connect("fetcher.streams", "converter.sources")
-    pipeline.connect("converter.documents", "prompt.documents")
-    pipeline.connect("prompt.prompt", "llm.prompt")
-
-    try:
-        result = pipeline.run({"fetcher": {"urls": ["https://haystack.deepset.ai/overview/quick-start"]},
-                               "prompt": {"query": "Which components do I need for a RAG pipeline?"}})
-        st.markdown(result["llm"]["replies"][0])
-    except Exception as e:
-        logging.info(f"Error: :red[**{e}**]")
-        st.write(f"Error: :red[**{e}**]")
-
-def get_generative_answer(query_pipeline, query):
-  results = query_pipeline.run({
-      "text_embedder": {"text": query},
-      "prompt_builder": {"query": query}
-    })
-  answer = results["generator"]["replies"][0]
-  return answer
-
-def ragchat():
-    uploaded_file = st.file_uploader(":blue[**Choose a excel file**]", type=['xls', 'xlsx'], accept_multiple_files=False)
-    if uploaded_file is not None:
-        content_file = pd.read_fwf(uploaded_file)
-        content_data = [Document(content=content_file)]
-        st.write(content_data)
-        # In memory document store
-        document_store = InMemoryDocumentStore()
-        #
-        #🚅 Components
-        #- splitter: DocumentSplitter
-        #- embedder: SentenceTransformersDocumentEmbedder
-        #- writer: DocumentWriter
-        #🛤️ Connections
-        #- splitter.documents -> embedder.documents(List[Document])
-        #- embedder.documents -> writer.documents(List[Document])
-        indexing_pipeline = Pipeline()
-        indexing_pipeline.add_component("splitter", DocumentSplitter(split_by="word", split_length=200))
-        indexing_pipeline.add_component("embedder",
-            SentenceTransformersDocumentEmbedder(
-                model="Snowflake/snowflake-arctic-embed-l", # good embedding model: https://huggingface.co/Snowflake/snowflake-arctic-embed-l
-                device=None,                                # load the model on GPU = ComponentDevice.from_str("cuda:0")
-            ))
-        indexing_pipeline.add_component("writer", DocumentWriter(document_store=document_store))
-        # connect the components
-        indexing_pipeline.connect("splitter", "embedder")
-        indexing_pipeline.connect("embedder", "writer")
-        #
-        indexing_pipeline.run({"splitter": {"documents": content_data}})
-        #
-        # RAF prompt template
-        prompt_template = """
-        <|begin_of_text|><|start_header_id|>user<|end_header_id|>
-        Using the information contained in the context, give a comprehensive answer to the question.
-        If the answer cannot be deduced from the context, do not give an answer.
-
-        Context:
-          {% for doc in documents %}
-          {{ doc.content }} URL:{{ doc.meta['url'] }}
-          {% endfor %};
-          Question: {{query}}<|eot_id|>
-
-        <|start_header_id|>assistant<|end_header_id|>
-        """
-        prompt_builder = PromptBuilder(template=prompt_template)
-        #
-        #
-        generator = HuggingFaceLocalGenerator(
-            model="meta-llama/Meta-Llama-3.1-8B-Instruct",
-            huggingface_pipeline_kwargs={"device_map": "auto",
-                                         "model_kwargs": {"load_in_4bit": True,
-                                                          "bnb_4bit_use_double_quant": True,
-                                                          "bnb_4bit_quant_type": "nf4",
-                                                          "bnb_4bit_compute_dtype": torch.bfloat16}},
-            generation_kwargs={"max_new_tokens": 500})
-        #
-        generator.warm_up()
-        #
-        #
-        query_pipeline = Pipeline()
-        query_pipeline.add_component("text_embedder", SentenceTransformersTextEmbedder(
-                model="Snowflake/snowflake-arctic-embed-l", # good embedding model: https://huggingface.co/Snowflake/snowflake-arctic-embed-l
-                device=ComponentDevice.from_str("cuda:0"),  # load the model on GPU
-                prefix="Represent this sentence for searching relevant passages: ", # as explained in the model card (https://huggingface.co/Snowflake/snowflake-arctic-embed-l#using-huggingface-transformers), queries should be prefixed
-            ))
-        query_pipeline.add_component("retriever", InMemoryEmbeddingRetriever(document_store=document_store, top_k=5))
-        query_pipeline.add_component("prompt_builder", PromptBuilder(template=prompt_template))
-        query_pipeline.add_component("generator", generator)
-        # connect the components
-        query_pipeline.connect("text_embedder.embedding", "retriever.query_embedding")
-        query_pipeline.connect("retriever.documents", "prompt_builder.documents")
-        query_pipeline.connect("prompt_builder", "generator")
-        #
-        if prompt := st.chat_input("What is up?"):
-            # q = "Who won the Best Picture Award in 2024?"
-            answer = get_generative_answer(query_pipeline, prompt)
-            st.write(answer)
-    else:
-        st.markdown(":red[**Pls upload a excel file...**]")
+fetcher = LinkContentFetcher()
+streams = fetcher.run(urls=urls)["streams"]
+converter = HTMLToDocument()
+docs = converter.run(sources=streams)
+st.write(docs)
 
 def main():
-    tab01, tab02, tab03, tab04, tab05 = st.tabs(["👻 Other", "👻 Other", "👻 RAG AI", "👻 OpenAI", "👻 SimpleChat"])
+    tab01, tab02, tab03, tab04, tab05 = st.tabs(["👻 Other", "👻 Other", "👻 Other", "👻 Other", "👻 Other"])
     with tab01:
-        st.subheader("Chatbot-01")
+        st.subheader("Other-01")
     with tab02:
-        st.subheader("Chatbot-02")
+        st.subheader("Other-02")
     with tab03:
-        ragchat()
+        st.subheader("Other-03")
     with tab04:
-        chatgpt()
+        st.subheader("Other-04")
     with tab05:
-        simplechat()
+        st.subheader("Other-05")
 
 if __name__ == '__main__':
-    st.title("Simple AI Chatbots")
+    st.title("Simple Code")
     main()

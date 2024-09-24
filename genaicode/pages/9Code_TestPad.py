@@ -6,8 +6,6 @@ import os, logging, shutil, spacy
 
 from pathlib import Path
 from io import StringIO
-from haystack import Document
-from haystack.components.converters import TextFileToDocument, OutputAdapter
 
 st.set_page_config(page_title="Application #07", page_icon="🪷", layout="wide")
 st.sidebar.title("🪷 Code-Testpad")
@@ -95,6 +93,8 @@ def test03():
     else:
         st.markdown(":red[**Pls upload (text/pdf) files...**]")
 
+from haystack import Document
+
 def test04():
     content_data = 0
     uploaded_file = st.file_uploader(":blue[**Choose a text file**]", type=['txt'], accept_multiple_files=False)
@@ -128,6 +128,8 @@ def test04():
         st.markdown(":red[**Pls upload a text file...**]")
     logging.info(f"[ai] uploaded_file: {uploaded_file}")
     logging.info(f"[ai] content_data: {content_data}")
+
+from haystack.components.converters import TextFileToDocument, OutputAdapter
 
 def test05():
     converter = TextFileToDocument()
@@ -204,7 +206,6 @@ def test08():
                   """
     adapter = OutputAdapter(template=template, output_type=dict)
     result = adapter.run(documents=documents)
-
     st.write("result-> ", result)
 
 test08()
