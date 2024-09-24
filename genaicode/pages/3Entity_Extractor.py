@@ -3,7 +3,6 @@ import spacy as sp
 import spacy_streamlit as ss
 import os, logging
 
-from openai import models
 from spacy import displacy
 from haystack import Document
 from spacy.util import minify_html
@@ -37,7 +36,7 @@ def upload_file():
     logging.info(f"[ai] content_data: {st.session_state.content_data}")
     return st.session_state.content_data
 
-def main():
+def ner_file(models, visual, selected):
     content_data = upload_file()
     if content_data is not None:
         text = content_data[0].content
@@ -50,27 +49,44 @@ def main():
         # In the transformer models, ner listens to the transformer component, so you can disable all components related tagging, parsing, and lemmatization
         # nlp2 = spacy.load("en_core_web_trf", disable=["tagger", "parser", "attribute_ruler", "lemmatizer"])
         #
-        models = ["en_core_web_sm", "en_core_web_md", "en_core_web_lg"]
-        visual = ["parser", "ner", "textcat", "similarity", "tokens"]
         show_all = False
         if show_all is True:
             ss.visualize(models=models, default_text=text, visualizers=visual, show_visualizer_select=False, show_logo=False)
         else:
-            selected = st.sidebar.selectbox(label="NLP Models",options=models, index=0)
-            nlp = sp.load(selected)
-            doc = nlp(text=text)
-            ss.visualize_ner(doc=doc, labels=nlp.get_pipe("ner").labels)
-            with st.expander("JSON Document"):
-                st.write("json-doc->", doc.to_json())
-            with st.expander("Dictionary Document"):
-                st.write("dict-doc->", doc.to_dict())
-            with st.expander("Parser Visualisation"):
-                ss.visualize_parser(doc=doc)
-            with st.expander("spaCy Visualisation"):
-                htmldoc = displacy.render(docs=doc, style="ent", minify=True)
-                st.html(htmldoc)
-                st.divider()
-                st.markdown(f":blue[**html-doc->**] {htmldoc}")
+            if text != "":
+                nlp = sp.load(selected)
+                doc = nlp(text=text)
+                ss.visualize_ner(doc=doc, labels=nlp.get_pipe("ner").labels, key="nerv1a")
+                with st.expander("JSON Document"):
+                    st.write("json-doc->", doc.to_json())
+                with st.expander("Dictionary Document"):
+                    st.write("dict-doc->", doc.to_dict())
+                with st.expander("Parser Visualisation"):
+                    ss.visualize_parser(doc=doc, key="nerv1b")
+                with st.expander("spaCy Visualisation"):
+                    htmldoc = displacy.render(docs=doc, style="ent", minify=True)
+                    st.html(htmldoc)
+                    st.divider()
+                    st.markdown(f":blue[**html-doc->**] {htmldoc}")
+
+def ner_text(models, visual, selected):
+    text = st.text_area(label="Enter any text here...", height=300)
+    submit = st.button(label="Submit")
+    if text != "" or (text != "" and submit is True):
+        nlp = sp.load(selected)
+        doc = nlp(text=text)
+        ss.visualize_ner(doc=doc, labels=nlp.get_pipe("ner").labels, key="nerv2a")
+        with st.expander("JSON Document"):
+            st.write("json-doc->", doc.to_json())
+        with st.expander("Dictionary Document"):
+            st.write("dict-doc->", doc.to_dict())
+        with st.expander("Parser Visualisation"):
+            ss.visualize_parser(doc=doc, key="nerv2b")
+        with st.expander("spaCy Visualisation"):
+            htmldoc = displacy.render(docs=doc, style="ent", minify=True)
+            st.html(htmldoc)
+            st.divider()
+            st.markdown(f":blue[**html-doc->**] {htmldoc}")
 
 if __name__ == '__main__':
     # st.title("Entity Extraction")
@@ -80,5 +96,12 @@ if __name__ == '__main__':
         st.session_state.clear()
         st.cache_data.clear()
         st.cache_resource.clear()
+    models = ["en_core_web_sm", "en_core_web_md", "en_core_web_lg"]
+    visual = ["parser", "ner", "textcat", "similarity", "tokens"]
+    selected = st.sidebar.selectbox(label="NLP Models", options=models, index=0)
     st.sidebar.image(image="helper/eco-friendly.png", caption=None, use_column_width="always")
-    main()
+    tab01, tab02 = st.tabs(["👻 NER File", "👻 NER Text"])
+    with tab01:
+        ner_file(models, visual, selected)
+    with tab02:
+        ner_text(models, visual, selected)
