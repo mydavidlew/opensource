@@ -13,6 +13,7 @@ haystack-experimental
 #farm-haystack
 #farm-haystack[colab,preprocessing,inference]
 #farm-haystack-text2speech
+neo4j-haystack
 markdownlit
 markdown-it-py
 accelerate
