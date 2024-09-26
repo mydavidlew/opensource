@@ -129,24 +129,64 @@ def test04():
     logging.info(f"[ai] uploaded_file: {uploaded_file}")
     logging.info(f"[ai] content_data: {content_data}")
 
+from typing import List
+from haystack import Document, Pipeline
 from haystack.components.converters import TextFileToDocument, OutputAdapter
+from haystack.components.embedders import SentenceTransformersTextEmbedder, SentenceTransformersDocumentEmbedder
+from neo4j_haystack import Neo4jEmbeddingRetriever, Neo4jDocumentStore
 
 def test05():
     converter = TextFileToDocument()
-    documents = converter.run(sources=["datasets/Sample_Text1.txt", "datasets/Sample_Text2.txt"])
-    document = documents["documents"][0]
+    documentx = converter.run(sources=["datasets/Sample_Text1.txt", "datasets/Sample_Text2.txt"])
+    documents = documentx["documents"]
+    st.write("documentx: ", documentx)
     st.write("documents: ", documents)
-    st.write("document:0: ", document)
     #
-    document_dict = document.to_dict()
-    document_object = document.from_dict(document_dict)
-    st.write("document:0_dict: ", document_dict)
-    st.write("document:0_object: ", document_object)
+    with st.expander("Shows details..."):
+        document1 = documents[0]
+        document_dict = document1.to_dict()
+        document_object = document1.from_dict(document_dict)
+        st.write("document:0_dict: ", document_dict)
+        st.write("document:0_object: ", document_object)
+        #
+        #document_json = document.to_json()
+        #document_object = document.from_json(document_json)
+        #st.write("document:0_json: ", document_json)
+        #st.write("document:0_object: ", document_object)
     #
-    document_json = document.to_json()
-    document_object = document.from_json(document_json)
-    st.write("document:0_json: ", document_json)
-    st.write("document:0_object: ", document_object)
+    document_store = Neo4jDocumentStore(
+        url="bolt://localhost:7687",
+        username="neo4j",
+        password="ne04j",
+        database="neo4j",
+        embedding_dim=384,
+        embedding_field="embedding",
+        index="document-embeddings",  # The name of the Vector Index in Neo4j
+        node_label="Document",  # Providing a label to Neo4j nodes which store Documents
+    )
+    doc_written = document_store.write_documents(documents=documents, policy=DuplicatePolicy.OVERWRITE)
+    st.write("Document written1: ", doc_written)
+
+    document_embedder = SentenceTransformersDocumentEmbedder(model="sentence-transformers/all-MiniLM-L6-v2")
+    document_embedder.warm_up()
+    documents_with_embeddings = document_embedder.run(documents)
+    doc_written = document_store.write_documents(documents_with_embeddings.get("documents"))
+    st.write("Document written2: ", doc_written)
+
+    st.write(document_store.count_documents())
+
+    pipeline = Pipeline()
+    pipeline.add_component("text_embedder", SentenceTransformersTextEmbedder(model="sentence-transformers/all-MiniLM-L6-v2"))
+    pipeline.add_component("retriever", Neo4jEmbeddingRetriever(document_store=document_store))
+    pipeline.connect("text_embedder.embedding", "retriever.query_embedding")
+
+    data = {
+        "text_embedder": {"text": "What is 1mdb?"},
+        "retriever": {"top_k": 5},
+    }
+    result = pipeline.run(data=data)
+    documents: List[Document] = result["retriever"]["documents"]
+    st.write(result)
 
 from spacy import displacy
 import spacy_streamlit as ss
