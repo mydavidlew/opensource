@@ -38,6 +38,8 @@ if "HF_API_TOKEN" not in os.environ:
 # Embedder model used
 embedder_model0 = "Snowflake/snowflake-arctic-embed-l" # good embedding model: https://huggingface.co/Snowflake/snowflake-arctic-embed-l
 embedder_model1 = "sentence-transformers/all-mpnet-base-v2"
+embedder_model2 = "sentence-transformers/all-MiniLM-L12-v2"
+embedder_model3 = "sentence-transformers/all-MiniLM-L6-v2"
 device_model0 = ComponentDevice.from_str("cuda:0")  # load the model on GPU
 device_model1 = None
 embedder_model = embedder_model1
