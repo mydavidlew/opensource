@@ -77,6 +77,8 @@ def rag_qna_single():
 
 # [2 creation of indexing_pipeline
     model_embedder = "sentence-transformers/all-mpnet-base-v2" # better & larger model than below
+    #model_embedder = "sentence-transformers/all-MiniLM-L12-v2"
+    #model_embedder = "sentence-transformers/all-MiniLM-L6-v2"
     #model_embedder = "sentence-transformers/multi-qa-mpnet-base-dot-v1"
     #device_embedder = ComponentDevice.from_str("cuda:0") # train using accelerate GPU
     device_embedder = None
