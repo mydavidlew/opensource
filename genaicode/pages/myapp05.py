@@ -94,6 +94,11 @@ def text_to_speech(text, output_file="temp/output.mp3"):
 
 # Main function to handle both STT and TTS
 def speechtextconverter():
+    # To create a Python program that performs Text-to-Speech (TTS) and Speech-to-Text (STT) using gTTS (Google
+    # Text-to-Speech), Whisper (for STT), and leveraging the transformer architecture, we can follow these steps:
+    # - Speech-to-Text (STT) : Use OpenAI's Whisper model to convert speech into text.
+    # - Text-to-Speech (TTS) : Use gTTS to convert text into speech.
+    #
     # Path to your audio file (for STT)
     audio_file = "temp/output.wav"  # Replace with your audio file path
 
@@ -107,13 +112,17 @@ def speechtextconverter():
 def main():
     tab01, tab02, tab03, tab04, tab05 = st.tabs(["👻 Other", "👻 Other", "👻 Other", "👻 Other", "👻 Other"])
     with tab01:
-        st.subheader("Other-01")
-        result = speech_to_text(use_microphone=True)
-        st.write(f"STT Transcription: {result}")
+        st.subheader("STT from Microphone or audio file")
+        tab01_btn = st.button(label="Click to **Start**", key="tab01_btn")
+        if tab01_btn is True:
+            result = speech_to_text(use_microphone=True)
+            st.write(f"STT Transcription: {result}")
     with tab02:
-        st.subheader("Other-02")
-        speechtextconverter()
-        st.write(f"Speech Text Analyser")
+        st.subheader("Speech Text Converter")
+        tab02_btn = st.button(label="Click to **Start**", key="tab02_btn")
+        if tab02_btn is True:
+            speechtextconverter()
+            st.write(f"Speech Text Analyser")
     with tab03:
         st.subheader("Other-03")
     with tab04:
@@ -123,8 +132,6 @@ def main():
         htmltodoc()
 
 if __name__ == '__main__':
-    start_btn = st.sidebar.button(f"Click to **Start**", type="primary", use_container_width=True)
-    if start_btn is True:
-        st.title("Speech Text Analyser")
-        with st.container(border=True):
-            main()
+    st.title("Speech Text Analyser")
+    with st.container(border=True):
+        main()
