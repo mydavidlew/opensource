@@ -21,7 +21,7 @@ from haystack.document_stores.types import DuplicatePolicy
 from haystack.document_stores.in_memory import InMemoryDocumentStore
 
 st.set_page_config(page_title="Application #02", page_icon="🌾", layout="wide")
-st.sidebar.title("🌾 Query Assistant")
+st.sidebar.title("🌾 RAG Assistant")
 st.sidebar.markdown(
     """This GenAI illustrates a combination of local contents with public AI models to produce
     a Question & Answer AI Assistant based on user uploaded (:rainbow[**multiple**]) documents. Enjoy!"""
