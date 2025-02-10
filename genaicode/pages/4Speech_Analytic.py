@@ -40,6 +40,7 @@ def upload_file():
             with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
                 temp_file.write(uploaded_file.read())
                 temp_filepath = temp_file.name
+            logging.info(f"Sound_file: {temp_filepath}")
 
             # Transcribe with Whisper
             st.subheader("Basic Transcription")
@@ -56,12 +57,15 @@ def upload_file():
             st.download_button(
                 label="Download Transcription",
                 data=transcription,
-                file_name="output.txt"
+                file_name="output.txt",
+                mime="text/plain"
             )
+            logging.info(f"Transcript_file: {temp_filepath}")
 
             # Clean up temporary file
-            logging.info(f"Sound_file: {temp_filepath}")
-            os.unlink(temp_filepath)
+            logging.info(f"Clearing cache: {temp_filepath}")
+            if os.path.exists(temp_filepath):
+                os.unlink(temp_filepath)
 
 # Function for Speech-to-Text using Whisper
 def speech_to_text(audio_file=None, use_microphone=False):
