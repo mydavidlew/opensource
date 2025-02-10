@@ -7,7 +7,7 @@ import os, logging, shutil, spacy
 from pathlib import Path
 from io import StringIO
 
-st.set_page_config(page_title="Application #07", page_icon="🪷", layout="wide")
+st.set_page_config(page_title="Application #09", page_icon="🪷", layout="wide")
 st.sidebar.title("🪷 Code-Testpad")
 st.sidebar.markdown(
     """This is a testpad to generates baseline library. Enjoy!"""
