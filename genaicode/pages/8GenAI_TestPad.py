@@ -28,7 +28,7 @@ from haystack.document_stores.in_memory import InMemoryDocumentStore
 from tensorflow.python.ops.summary_ops_v2 import write
 from tensorflow.tools.docs.doc_controls import header
 
-st.set_page_config(page_title="Application #06", page_icon="🌹", layout="wide")
+st.set_page_config(page_title="Application #08", page_icon="🌹", layout="wide")
 st.sidebar.title("🌹 RAG-Testpad")
 st.sidebar.markdown(
     """This demo illustrates the capability of GenAI using Haystack and [**Streamlit**](https://docs.streamlit.io/develop/api-reference)
