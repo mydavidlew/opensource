@@ -19,10 +19,20 @@ st.sidebar.markdown(
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 logging.getLogger("haystack").setLevel(logging.INFO)
 
+# Initialize components
+@st.cache_resource
+def load_whisper_model():
+    return whisper.load_model("small")
+
+@st.cache_resource
+def load_transformer_pipeline():
+    return pipeline("text2text-generation", model="t5-small")
+
 def upload_file():
-    with st.form("upload-documents", clear_on_submit=True, border=True):
+    #with st.form("upload-documents", clear_on_submit=True, border=True):
         uploaded_file = st.file_uploader(":blue[**Choose a audio file**]", type=['mp3', 'wav'], accept_multiple_files=False)
-        submitted = st.form_submit_button("Confirm Upload")
+        #submitted = st.form_submit_button("Confirm Upload")
+        submitted = st.button("Confirm Upload", type="secondary")
         if (submitted is True) and (uploaded_file is not None):
             st.audio(uploaded_file, format="audio/wav")
 
@@ -31,10 +41,27 @@ def upload_file():
                 temp_file.write(uploaded_file.read())
                 temp_filepath = temp_file.name
 
+            # Transcribe with Whisper
+            st.subheader("Basic Transcription")
+            transcription = speech_to_text(temp_filepath)
+            st.write(transcription)
+
+            # Process with Transformer
+            st.subheader("Enhanced with Transformer")
+            summarizer = load_transformer_pipeline()
+            summary = summarizer("summarize: " + transcription, max_length=150)[0]['generated_text']
+            st.write(summary)
+
+            # Add download button
+            st.download_button(
+                label="Download Transcription",
+                data=transcription,
+                file_name="output.txt"
+            )
+
             # Clean up temporary file
-            os.remove(temp_filepath)
-            logging.info(f"Uploaded_file: {temp_filepath}")
-            return temp_filepath
+            logging.info(f"Sound_file: {temp_filepath}")
+            os.unlink(temp_filepath)
 
 # Function for Speech-to-Text using Whisper
 def speech_to_text(audio_file=None, use_microphone=False):
@@ -145,35 +172,32 @@ def main():
     with tab01:
         st.subheader("STT from Microphone")
         tab01_btn = st.button(label="Click to **Start**", key="tab01_btn")
-        if tab01_btn:
+        if tab01_btn is True:
             logging.info(f"Tab1: STT from Microphone")
             result = speech_to_text(use_microphone=True)
             st.write(f"STT Transcription: {result}")
     with tab02:
         st.subheader("Speech Text Converter")
         tab02_btn = st.button(label="Click to **Start**", key="tab02_btn")
-        if tab02_btn:
+        if tab02_btn is True:
             logging.info(f"Tab2: Speech Text Converter")
             speechtextconverter()
     with tab03:
         st.subheader("STT-01")
         tab03_btn = st.button(label="Click to **Start**", key="tab03_btn")
-        if tab03_btn:
+        if tab03_btn is True:
             logging.info(f"Tab3: STT-01")
             speechtotext01()
     with tab04:
         st.subheader("STT-02")
         tab04_btn = st.button(label="Click to **Start**", key="tab04_btn")
-        if tab04_btn:
+        if tab04_btn is True:
             logging.info(f"Tab4: STT-02")
             speechtotext02()
     with tab05:
         st.subheader("Test")
-        tab05_btn = st.button(label="Click to **Start**", key="tab05_btn")
-        if tab05_btn:
-            logging.info(f"Tab5: Test")
-            file = upload_file()
-            st.write(f"Uploaded file: {file}")
+        logging.info(f"Tab5: Test")
+        upload_file()
 
 if __name__ == '__main__':
     st.title("Speech Text Analyser")
