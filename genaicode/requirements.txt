@@ -39,3 +39,7 @@ transformers
 huggingface-hub
 sentence-transformers
 openai
+openai-whisper
+gtts
+pydub
+sounddevice
