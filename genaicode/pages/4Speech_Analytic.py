@@ -44,7 +44,9 @@ def upload_file():
 
             # Transcribe with Whisper
             st.subheader("Basic Transcription")
-            transcription = speech_to_text(temp_filepath)
+            model = load_whisper_model()
+            result = model.transcribe(temp_filepath)
+            transcription = result["text"]
             st.write(transcription)
 
             # Process with Transformer
