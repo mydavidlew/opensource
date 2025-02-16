@@ -174,7 +174,7 @@ def speechtotext02():
     print("Transcription:", output)
 
 def main():
-    tab01, tab02, tab03, tab04, tab05 = st.tabs(["👻 STTmic", "👻 STTS", "👻 STT1", "👻 STT2", "👻 Test"])
+    tab01, tab02, tab03, tab04, tab05 = st.tabs(["👻 STTmic", "👻 STTS", "👻 STT1", "👻 STT2", "👻 STTfile"])
     with tab01:
         st.subheader("STT from Microphone")
         tab01_btn = st.button(label="Click to **Start**", key="tab01_btn")
@@ -201,7 +201,7 @@ def main():
             logging.info(f"Tab4: STT-02")
             speechtotext02()
     with tab05:
-        st.subheader("Test")
+        st.subheader("STT from Audio File")
         logging.info(f"Tab5: Test")
         upload_file()
 
