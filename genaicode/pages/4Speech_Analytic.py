@@ -28,19 +28,20 @@ def load_whisper_model():
 def load_transformer_pipeline():
     return pipeline("text2text-generation", model="t5-small")
 
-def upload_file():
+def stt_upload_file():
     #with st.form("upload-documents", clear_on_submit=True, border=True):
         uploaded_file = st.file_uploader(":blue[**Choose a audio file**]", type=['mp3', 'wav'], accept_multiple_files=False)
         #submitted = st.form_submit_button("Confirm Upload")
-        submitted = st.button("Confirm Upload", type="secondary")
+        submitted = st.button("Confirm Upload", type="secondary", key="stt_upload_file")
         if (submitted is True) and (uploaded_file is not None):
-            st.audio(uploaded_file, format="audio/wav")
-
             # Save uploaded file to a temporary location
             with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
                 temp_file.write(uploaded_file.read())
                 temp_filepath = temp_file.name
             logging.info(f"Sound_file: {temp_filepath}")
+
+            # Show play audio dialog box
+            st.audio(uploaded_file, format="audio/wav")
 
             # Transcribe with Whisper
             st.subheader("Basic Transcription")
@@ -62,7 +63,48 @@ def upload_file():
                 file_name="output.txt",
                 mime="text/plain"
             )
-            logging.info(f"Transcript_file: {temp_filepath}")
+            st.write(f"Transcript_file: {temp_filepath}")
+
+            # Clean up temporary file
+            logging.info(f"Clearing cache: {temp_filepath}")
+            if os.path.exists(temp_filepath):
+                os.unlink(temp_filepath)
+
+def tts_upload_file():
+    #with st.form("upload-documents", clear_on_submit=True, border=True):
+        uploaded_file = st.file_uploader(":blue[**Choose a text file**]", type=['txt'], accept_multiple_files=False)
+        #submitted = st.form_submit_button("Confirm Upload")
+        submitted = st.button("Confirm Upload", type="secondary", key="tts_upload_file")
+        if (submitted is True) and (uploaded_file is not None):
+            # Save uploaded file to a temporary location
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".txt") as temp_file:
+                temp_file.write(uploaded_file.read())
+                temp_filepath = temp_file.name
+            logging.info(f"Text_file: {temp_filepath}")
+
+            # To read file as string:
+            with open(mode="r", file=temp_filepath, encoding='utf-8') as fn:
+                read_data = fn.read()
+                fn.close()
+            st.write(f"Content: :red[**{read_data}**]")
+
+            # Process with Transformer
+            st.subheader("Enhanced with Transformer")
+            summarizer = load_transformer_pipeline()
+            summary = summarizer("summarize: " + read_data, max_length=150)[0]['generated_text']
+            st.write(summary)
+
+            # Text processing with GTTS
+            st.subheader("Basic English Synthesize")
+            audio_file = "temp/output.mp3"
+            tts = gTTS(text=read_data, lang="en", slow=False, lang_check=True)
+            tts.save(audio_file)
+            logging.info(f"Synthesize file: {audio_file}")
+
+            # Play generated audio file
+            st.write(f"Play SoundFile: {audio_file}")
+            audio = AudioSegment.from_mp3(audio_file)
+            play(audio)
 
             # Clean up temporary file
             logging.info(f"Clearing cache: {temp_filepath}")
@@ -141,7 +183,7 @@ def speechtextconverter():
     st.write(f"Play SoundFile: {speech_file}")
 
 def speechtotext01():
-    logging.info("Transcribing audio 01...")
+    st.subheader("Transcribing audio 01...")
     # Load Whisper model (choose 'tiny', 'base', 'small', 'medium', or 'large')
     model = whisper.load_model("small")
     # load audio and pad/trim it to fit 30 seconds
@@ -152,16 +194,16 @@ def speechtotext01():
     # detect the spoken language
     _, probs = model.detect_language(mel)
     logging.info(f"Detected language: {max(probs, key=probs.get)}")
-    print(f"Detected language: {max(probs, key=probs.get)}")
+    st.write(f"Detected language: {max(probs, key=probs.get)}")
 
     # decode the audio
     options = whisper.DecodingOptions()
     result = whisper.decode(model, mel, options)
     # print the recognized text
-    print("Transcription:", result.text)
+    st.write("Transcription:", result.text)
 
 def speechtotext02():
-    logging.info("Transcribing audio 02...")
+    st.subheader("Transcribing audio 02...")
     # Load the pre-trained Whisper model
     stt_pipeline = pipeline(
         task="automatic-speech-recognition",
@@ -171,10 +213,10 @@ def speechtotext02():
     # Process an audio file
     audio_path = "temp/sample-0.mp3"
     output = stt_pipeline(audio_path)["text"]
-    print("Transcription:", output)
+    st.write("Transcription:", output)
 
 def main():
-    tab01, tab02, tab03, tab04, tab05 = st.tabs(["👻 STTmic", "👻 STTS", "👻 STT1", "👻 STT2", "👻 STTfile"])
+    tab01, tab02, tab03, tab04, tab05 = st.tabs(["👻 STTmic", "👻 STTS", "👻 STT1&2", "👻 TTSfile", "👻 STTfile"])
     with tab01:
         st.subheader("STT from Microphone")
         tab01_btn = st.button(label="Click to **Start**", key="tab01_btn")
@@ -189,21 +231,20 @@ def main():
             logging.info(f"Tab2: Speech Text Converter")
             speechtextconverter()
     with tab03:
-        st.subheader("STT-01")
+        st.subheader("STT-01&02")
         tab03_btn = st.button(label="Click to **Start**", key="tab03_btn")
         if tab03_btn is True:
-            logging.info(f"Tab3: STT-01")
+            logging.info(f"Tab3: STT-01&02")
             speechtotext01()
-    with tab04:
-        st.subheader("STT-02")
-        tab04_btn = st.button(label="Click to **Start**", key="tab04_btn")
-        if tab04_btn is True:
-            logging.info(f"Tab4: STT-02")
             speechtotext02()
+    with tab04:
+        st.subheader("TTS from Text File")
+        logging.info(f"Tab4: TTS from Text File")
+        tts_upload_file()
     with tab05:
         st.subheader("STT from Audio File")
-        logging.info(f"Tab5: Test")
-        upload_file()
+        logging.info(f"Tab5: STT from Audio File")
+        stt_upload_file()
 
 if __name__ == '__main__':
     st.title("Speech Text Analyser")
