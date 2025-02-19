@@ -1,30 +1,19 @@
-import helper.config as cfg
 import streamlit as st
-import pandas as pd
-import logging, random, time, os
+import logging, random, time, os, io
 
 import tempfile
+import cv2
 import torch
-import whisper
-import sounddevice as sd
-from gtts import gTTS
-from pydub import AudioSegment
-from pydub.playback import play
-from scipy.io.wavfile import write
-from transformers import pipeline
+import torchvision
+import matplotlib.pyplot as plt
+import torchvision.transforms as T
+from torchvision.transforms import functional as F
+from transformers import DetrImageProcessor, DetrFeatureExtractor, DetrForObjectDetection
+from torch.utils.data import DataLoader, Dataset
+from PIL import Image
 
-#from haystack import Pipeline
-#from haystack import Document
-#from haystack.utils import Secret, ComponentDevice
-from haystack.components.fetchers import LinkContentFetcher
-#from haystack.components.retrievers.in_memory import InMemoryEmbeddingRetriever
-from haystack.components.converters import HTMLToDocument, TextFileToDocument
-#from haystack.components.embedders import SentenceTransformersTextEmbedder, SentenceTransformersDocumentEmbedder
-#from haystack.components.builders import PromptBuilder
-#from haystack.components.preprocessors import DocumentSplitter
-#from haystack.components.generators import OpenAIGenerator, HuggingFaceLocalGenerator
-#from haystack.components.writers import DocumentWriter
-#from haystack.document_stores.in_memory import InMemoryDocumentStore
+import matplotlib
+matplotlib.use('tkagg')
 
 st.set_page_config(page_title="Application #05", page_icon="🪻", layout="wide")
 st.sidebar.title("🪻 Speech Text Analyser")
@@ -37,173 +26,356 @@ st.sidebar.markdown(
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
 logging.getLogger("haystack").setLevel(logging.INFO)
 
-def upload_file():
-    with st.form("upload-documents", clear_on_submit=True, border=True):
-        uploaded_file = st.file_uploader(":blue[**Choose a audio file**]", type=['mp3', 'wav'], accept_multiple_files=False)
-        submitted = st.form_submit_button("Confirm Upload")
-        if (submitted is True) and (uploaded_file is not None):
-            st.audio(uploaded_file, format="audio/wav")
+# COCO classes that DETR is trained on (index 0 is a placeholder)
+CLASSES = [
+    "N/A", "person", "bicycle", "car", "motorcycle", "airplane", "bus",
+    "train", "truck", "boat", "traffic light", "fire hydrant", "N/A",
+    "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse",
+    "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "N/A",
+    "backpack", "umbrella", "N/A", "N/A", "handbag", "tie", "suitcase",
+    "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat",
+    "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle",
+    "N/A", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana",
+    "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza",
+    "donut", "cake", "chair", "couch", "potted plant", "bed", "N/A",
+    "dining table", "N/A", "N/A", "toilet", "N/A", "tv", "laptop", "mouse",
+    "remote", "keyboard", "cell phone", "microwave", "oven", "toaster",
+    "sink", "refrigerator", "N/A", "book", "clock", "vase", "scissors",
+    "teddy bear", "hair drier", "toothbrush"
+]
 
-            # Save uploaded file to a temporary location
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
-                temp_file.write(uploaded_file.read())
-                temp_filepath = temp_file.name
+#1. Using Pretrained DETR Model from torchvision
+def DETR_01():
+    # Load a pre-trained DETR model
+    model = torch.hub.load(repo_or_dir="facebookresearch/detr", model="detr_resnet50", pretrained=True, trust_repo=True)
+    model.eval()
 
-            # Clean up temporary file
-            os.remove(temp_filepath)
-            logging.info(f"Uploaded_file: {temp_filepath}")
-            return temp_filepath
+    # Load and preprocess an image
+    image_path = "temp/5851546454_4fdd60e8d5_o.jpg"
+    image = Image.open(image_path).convert("RGB")
+    transform = T.Compose([T.ToTensor()]) # [T.Resize((800, 800)), T.ToTensor()]
+    img_tensor = transform(image).unsqueeze(0)  # add batch dimension
 
-# Function for Speech-to-Text using Whisper
-def speech_to_text(audio_file=None, use_microphone=False):
-    if use_microphone:
-        logging.info("Recording audio...")
-        # Record audio from microphone
-        filename = "temp/output.wav"
-        fs = 16000  # Sample rate
-        duration = 5  # Duration in seconds
-        audio = sd.rec(int(duration * fs), samplerate=fs, channels=1)
-        sd.wait()
-        write(filename, fs, audio)  # Save as temporary file
-        logging.info(f"Recording file: {filename}")
-        audio_file = filename
+    # Run inference to get outputs
+    with torch.no_grad():
+        outputs = model(img_tensor)
 
-    if audio_file:
-        logging.info("Transcribing audio...")
-        # Load Whisper model (choose 'tiny', 'base', 'small', 'medium', or 'large')
-        model = whisper.load_model("small")
-        # Transcribe audio file
-        result = model.transcribe(audio_file)
-        transcribed_text = result["text"]
-        logging.info(f"Transcription: {transcribed_text}")
-        return transcribed_text
-    else:
-        raise ValueError("Provide either an audio file path or set use_microphone=True")
+    # The outputs contain:
+    # - "pred_logits": classification logits for each of the 100 queries
+    # - "pred_boxes": bounding box predictions for each query
+    logits = outputs["pred_logits"][0]  # shape: [num_queries, num_classes+1]
+    boxes = outputs["pred_boxes"][0]  # shape: [num_queries, 4]
 
-# Function for Text-to-Speech using gTTS
-def text_to_speech(text, lang='en', output_file="temp/output.mp3"):
-    logging.info("Converting text to speech...")
-    tts = gTTS(text=text, lang=lang, slow=False, lang_check=True)
-    tts.save(output_file)
-    logging.info(f"Speech saved to {output_file}")
-    return output_file
+    # Convert logits to probabilities using softmax along the last dimension
+    probs = logits.softmax(-1)
 
-def play_audio_file(audio_file):
-    # Play the generated speech
-    audio = None
-    if audio_file.endswith(".mp3"):
-        audio = AudioSegment.from_mp3(audio_file)
-    elif audio_file.endswith(".wav"):
-        audio = AudioSegment.from_wav(audio_file)
-    if audio:
-        logging.info(f"Play SoundFile: {audio_file}")
-        play(audio)
+    # Get the highest probability and the corresponding label for each query
+    scores, labels = probs.max(-1)
 
-# Optional: Convert MP3 to WAV if needed (Whisper works with WAV files)
-def convert_mp3_to_wav(mp3_file, wav_file):
-    logging.info(f"Converting {mp3_file} to {wav_file}")
-    audio = AudioSegment.from_mp3(mp3_file)
-    audio.export(wav_file, format="wav")
+    # Define a threshold to filter out low-confidence predictions
+    confidence_threshold = 0.7
+    keep = scores > confidence_threshold
 
-# Main function to handle both STT and TTS
-def speechtextconverter():
-    # To create a Python program that performs Text-to-Speech (TTS) and Speech-to-Text (STT) using gTTS (Google
-    # Text-to-Speech), Whisper (for STT), and leveraging the transformer architecture, we can follow these steps:
-    # - Speech-to-Text (STT) : Use OpenAI's Whisper model to convert speech into text.
-    # - Text-to-Speech (TTS) : Use gTTS to convert text into speech.
-    #
-    # Path to your audio file (for STT)
-    audio_file = "temp/sample-0.mp3"  # Replace with your audio file path
+    # Filter out predictions that are below the threshold
+    filtered_scores = scores[keep]
+    filtered_labels = labels[keep]
+    filtered_boxes = boxes[keep]
 
-    # Step 1: Convert Speech to Text using Whisper
-    transcribed_text = speech_to_text(audio_file=audio_file)
-    st.write(f"STT Transcription: {transcribed_text}")
-    # Step 2: Convert Text to Speech using gTTS
-    speech_file = text_to_speech(transcribed_text, lang='en')
-    st.write(f"TTS SoundFile: {speech_file}")
-    # Step 3: Play the sound file
-    play_audio_file(speech_file)
-    st.write(f"Play SoundFile: {speech_file}")
+    # Print the detected object labels and their scores
+    st.subheader("1. Using Pretrained DETR Model from torchvision")
+    st.write("Detected objects:")
+    i = 0
+    for score, label, box in zip(filtered_scores, filtered_labels, filtered_boxes):
+        i += 1
+        label_idx = label.item()  # get integer label
+        class_name = CLASSES[label_idx] if label_idx < len(CLASSES) else "NULL"
+        st.write(f"Label[:blue[{i}]]: :blue[{class_name}], Score: :green[{score.item():.3f}], Box: :green[{box.tolist()}]")
 
-def speechtotext01():
-    logging.info("Transcribing audio 01...")
-    # Load Whisper model (choose 'tiny', 'base', 'small', 'medium', or 'large')
-    model = whisper.load_model("small")
-    # load audio and pad/trim it to fit 30 seconds
-    audio = whisper.load_audio("temp/sample-0.mp3")
-    audio = whisper.pad_or_trim(audio)
-    # make log-Mel spectrogram and move to the same device as the model
-    mel = whisper.log_mel_spectrogram(audio, n_mels=model.dims.n_mels).to(model.device)
-    # detect the spoken language
-    _, probs = model.detect_language(mel)
-    logging.info(f"Detected language: {max(probs, key=probs.get)}")
-    print(f"Detected language: {max(probs, key=probs.get)}")
+    # Print detected objects
+    st.write("outputs: ", outputs)
 
-    # decode the audio
-    options = whisper.DecodingOptions()
-    result = whisper.decode(model, mel, options)
-    # print the recognized text
-    print("Transcription:", result.text)
+#2. Using Hugging Face Transformers Library
+def DETR_02():
+    # Load DETR model and processor
+    processor = DetrImageProcessor.from_pretrained("facebook/detr-resnet-50")
+    model = DetrForObjectDetection.from_pretrained("facebook/detr-resnet-50")
 
-def speechtotext02():
-    logging.info("Transcribing audio 02...")
-    # Load the pre-trained Whisper model
-    stt_pipeline = pipeline(
-        task="automatic-speech-recognition",
-        model="openai/whisper-small",
-        device="cuda" if torch.cuda.is_available() else "cpu"
-    )
-    # Process an audio file
-    audio_path = "temp/sample-0.mp3"
-    output = stt_pipeline(audio_path)["text"]
-    print("Transcription:", output)
+    # Load and preprocess image
+    image_path = "temp/5851546454_4fdd60e8d5_o.jpg"
+    image = Image.open(image_path).convert("RGB")
+    inputs = processor(images=image, return_tensors="pt")
 
-def htmltodoc():
-    urls = [
-        "https://techcrunch.com/2023/04/27/pinecone-drops-100m-investment-on-750m-valuation-as-vector-database-demand-grows/",
-        "https://techcrunch.com/2023/04/27/replit-funding-100m-generative-ai/",
-        "https://www.cnbc.com/2024/06/12/mistral-ai-raises-645-million-at-a-6-billion-valuation.html",
-        "https://techcrunch.com/2024/01/23/qdrant-open-source-vector-database/",
-        "https://www.intelcapital.com/anyscale-secures-100m-series-c-at-1b-valuation-to-radically-simplify-scaling-and-productionizing-ai-applications/",
-        "https://techcrunch.com/2023/04/28/openai-funding-valuation-chatgpt/",
-        "https://techcrunch.com/2024/03/27/amazon-doubles-down-on-anthropic-completing-its-planned-4b-investment/",
-        "https://techcrunch.com/2024/01/22/voice-cloning-startup-elevenlabs-lands-80m-achieves-unicorn-status/",
-        "https://techcrunch.com/2023/08/24/hugging-face-raises-235m-from-investors-including-salesforce-and-nvidia",
-        "https://www.prnewswire.com/news-releases/ai21-completes-208-million-oversubscribed-series-c-round-301994393.html",
-        "https://techcrunch.com/2023/03/15/adept-a-startup-training-ai-to-use-existing-software-and-apis-raises-350m/",
-        "https://www.cnbc.com/2023/03/23/characterai-valued-at-1-billion-after-150-million-round-from-a16z.html",
-    ]
-    fetcher = LinkContentFetcher()
-    streams = fetcher.run(urls=urls)["streams"]
-    converter = HTMLToDocument()
-    docs = converter.run(sources=streams)
-    st.write(docs)
+    # Run inference
+    with torch.no_grad():
+        outputs = model(**inputs)
+
+    # Print detected objects
+    st.subheader("2. Using Hugging Face Transformers Library")
+    st.write(outputs)
+
+#3. Using DETR with OpenCV for Real-time Webcam Detection
+def DETR_03():
+    # Load pretrained model
+    model = torch.hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True, trust_repo=True)
+    model.eval()
+
+    # Preprocessing transformation
+    transform = T.Compose([T.ToTensor()])
+
+    # Capture from webcam
+    st.subheader("3. Using DETR with OpenCV for Real-time Webcam Detection")
+    cap = cv2.VideoCapture(0)
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        # Convert to PIL image and preprocess
+        image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        img_tensor = transform(image).unsqueeze(0)
+
+        with torch.no_grad():
+            outputs = model(img_tensor)
+
+        # Display frame (Modify to draw boxes using OpenCV)
+        cv2.imshow("DETR Object Detection", frame)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+#4. Using DETR with Custom Dataset via PyTorch Training
+def DETR_04():
+    # Define a custom dataset
+    class CustomDataset(Dataset):
+        def __init__(self, image_folder):
+            self.image_folder = image_folder
+            self.images = os.listdir(image_folder)
+
+        def __len__(self):
+            return len(self.images)
+
+        def __getitem__(self, idx):
+            img_path = os.path.join(self.image_folder, self.images[idx])
+            image = Image.open(img_path).convert("RGB")
+            image = F.to_tensor(image)
+            return image, {}
+
+    # Load dataset and model
+    dataset = CustomDataset("temp") # path_to_your_dataset
+    dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
+    model = torch.hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True, trust_repo=True)
+    model.eval()
+
+    # Inference on dataset
+    st.subheader("4. Using DETR with Custom Dataset via PyTorch Training")
+    for images, _ in dataloader:
+        with torch.no_grad():
+            outputs = model(images)
+        st.write(outputs)
+
+#5. Deploying DETR with Flask for Web API
+def DETR_05():
+    from flask import Flask, request, jsonify
+    app = Flask(__name__)
+
+    # Load model
+    model = torch.hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True, trust_repo=True)
+    model.eval()
+    transform = T.Compose([T.ToTensor()])
+
+    @app.route("/detect", methods=["POST"])
+    def detect():
+        file = request.files["image"]
+        image = Image.open(io.BytesIO(file.read()))
+        img_tensor = transform(image).unsqueeze(0)
+
+        with torch.no_grad():
+            outputs = model(img_tensor)
+
+        return jsonify(outputs)
+
+    if __name__ == "__main__":
+        app.run()
+
+def DETR_06():
+    # 1. Load Pre-trained Model and Feature Extractor
+    model_name = "facebook/detr-resnet-50"  # Or "facebook/detr-swin-base" for a larger model
+    feature_extractor = DetrImageProcessor.from_pretrained(model_name)
+    model = DetrForObjectDetection.from_pretrained(model_name)
+
+    # 2. Load and Preprocess Image
+    image_path = "temp/5851546454_4fdd60e8d5_o.jpg"  # Replace with your image path
+    image = Image.open(image_path).convert("RGB")
+    plt.imshow(image)
+
+    inputs = feature_extractor(images=image, return_tensors="pt")  # PyTorch tensors
+
+    # 3. Perform Object Detection
+    with torch.no_grad():
+        outputs = model(**inputs)
+
+    # 4. Post-process Predictions
+    # Convert logits to probabilities and get bounding boxes
+    logits = outputs.logits
+    boxes = outputs.pred_boxes
+
+    # Get predicted labels and bounding boxes (scaled to image size)
+    labels = logits.argmax(-1).tolist()[0]  # Get predicted class indices
+    scores = torch.nn.functional.softmax(logits, dim=-1)[0, :, labels].max(dim=-1)[0].tolist() # Get confidence scores
+    boxes = boxes[0].tolist()  # Get bounding box coordinates (normalized)
+
+    image_width, image_height = image.size
+
+    # Convert normalized boxes to pixel coordinates
+    predicted_boxes = []
+    for box in boxes:
+        x_min, y_min, x_max, y_max = box
+        x_min = int(x_min * image_width)
+        y_min = int(y_min * image_height)
+        x_max = int(x_max * image_width)
+        y_max = int(y_max * image_height)
+        predicted_boxes.append([x_min, y_min, x_max, y_max])
+
+    # 5. Visualize Results
+    # Get class names (you'll need to map indices to names)
+    id2label = model.config.id2label  # Dictionary mapping class indices to names
+
+    plt.imshow(image)
+    ax = plt.gca()
+
+    for label, score, box in zip(labels, scores, predicted_boxes):
+        if score > 0.9:  # Adjust confidence threshold as needed
+            x_min, y_min, x_max, y_max = box
+            ax.add_patch(plt.Rectangle((x_min, y_min), x_max - x_min, y_max - y_min,
+                                     fill=False, edgecolor='green', linewidth=1))
+            class_name = id2label[label] if label in id2label else f"Class {label}" # Handle cases where label is not in id2label
+            plt.text(x_min, y_min - 10, f"{class_name}: {score:.2f}", fontsize=10, color='red')
+
+    plt.axis('off')
+    plt.show()
+
+    # Example of how to save the image (optional)
+    #plt.savefig("detected_objects.jpg")
+
+
+# Load the pre-trained DETR model from torchvision
+def load_detr_model():
+    model = torch.hub.load('facebookresearch/detr', 'detr_resnet50', pretrained=True, trust_repo=True)
+    model.eval()  # Set the model to evaluation mode
+    return model
+
+# Standard PyTorch image transforms for DETR input
+def get_transforms():
+    return T.Compose([
+    #    T.Resize(800),  # Resize the image to a fixed size
+        T.ToTensor(),   # Convert the image to a PyTorch tensor
+        T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # Normalize with ImageNet stats
+    ])
+
+# Perform object detection using DETR
+def detect_objects(model, image, transform):
+    # Apply the transformation to the image
+    img_tensor = transform(image).unsqueeze(0)  # Add batch dimension
+
+    # Run inference
+    with torch.no_grad():
+        outputs = model(img_tensor)
+
+    # Extract predictions
+    probas = outputs['pred_logits'].softmax(-1)[0, :, :-1]  # Class probabilities
+    bboxes_scaled = rescale_bboxes(outputs['pred_boxes'][0], image.size)  # Rescale bounding boxes
+
+    return probas, bboxes_scaled
+
+# Rescale bounding boxes to the original image size
+def rescale_bboxes(out_bbox, size):
+    img_w, img_h = size
+    b = out_bbox * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32)
+    b = b.numpy()
+    return b
+
+# Plot the detected objects on the image
+def plot_results(image, probas, bboxes, threshold=0.9):
+    plt.figure(figsize=(16, 10))
+    plt.imshow(image)
+    ax = plt.gca()
+
+    # Iterate over predictions and draw bounding boxes
+    for p, (xmin, ymin, xmax, ymax) in zip(probas, bboxes):
+        cl = p.argmax().item()  # Get the predicted class
+        if p[cl] > threshold:  # Only display objects above the confidence threshold
+            label = f"{CLASSES[cl]}: {p[cl]:.2f}"
+            width = xmax - xmin
+            height = ymax - ymin
+            ax.add_patch(plt.Rectangle((xmin, ymin), width, height, fill=False, color='red', linewidth=2))
+            ax.text(xmin, ymin, label, fontsize=12, bbox=dict(facecolor='yellow', alpha=0.5))
+
+    plt.axis('off')
+    plt.show()
+
+# COCO classes (used by DETR)
+CLASSES = [
+    'N/A', 'person', 'bicycle', 'car', 'motorcycle', 'airplane', 'bus',
+    'train', 'truck', 'boat', 'traffic light', 'fire hydrant', 'N/A',
+    'stop sign', 'parking meter', 'bench', 'bird', 'cat', 'dog', 'horse',
+    'sheep', 'cow', 'elephant', 'bear', 'zebra', 'giraffe', 'N/A', 'backpack',
+    'umbrella', 'N/A', 'N/A', 'handbag', 'tie', 'suitcase', 'frisbee', 'skis',
+    'snowboard', 'sports ball', 'kite', 'baseball bat', 'baseball glove',
+    'skateboard', 'surfboard', 'tennis racket', 'bottle', 'N/A', 'wine glass',
+    'cup', 'fork', 'knife', 'spoon', 'bowl', 'banana', 'apple', 'sandwich',
+    'orange', 'broccoli', 'carrot', 'hot dog', 'pizza', 'donut', 'cake',
+    'chair', 'couch', 'potted plant', 'bed', 'N/A', 'dining table', 'N/A',
+    'N/A', 'toilet', 'N/A', 'tv', 'laptop', 'mouse', 'remote', 'keyboard',
+    'cell phone', 'microwave', 'oven', 'toaster', 'sink', 'refrigerator', 'N/A',
+    'book', 'clock', 'vase', 'scissors', 'teddy bear', 'hair drier', 'toothbrush'
+]
+
+# Main function
+def DETR_main():
+    # Load the DETR model
+    detr_model = load_detr_model()
+
+    # Load an image from file
+    image_path = "temp/5851546454_4fdd60e8d5_o.jpg"  # Replace with your image path
+    image = Image.open(image_path).convert("RGB")
+
+    # Define the image transforms
+    transform = get_transforms()
+
+    # Perform object detection
+    probas, bboxes = detect_objects(detr_model, image, transform)
+
+    # Visualize the results
+    plot_results(image, probas, bboxes)
+
+
+def test():
+    return True
 
 def main():
-    tab01, tab02, tab03, tab04, tab05 = st.tabs(["👻 STTmic", "👻 STTS", "👻 STT1", "👻 STT2", "👻 Html2Doc"])
+    tab01, tab02, tab03, tab04, tab05 = st.tabs(["👻 T01", "👻 T02", "👻 T03", "👻 T04", "👻 T05"])
     with tab01:
-        st.subheader("STT from Microphone")
+        st.subheader("T01")
         tab01_btn = st.button(label="Click to **Start**", key="tab01_btn")
         if tab01_btn is True:
-            result = speech_to_text(use_microphone=True)
-            st.write(f"STT Transcription: {result}")
+            DETR_01()
     with tab02:
-        st.subheader("Speech Text Converter")
+        st.subheader("T02")
         tab02_btn = st.button(label="Click to **Start**", key="tab02_btn")
         if tab02_btn is True:
-            speechtextconverter()
+            DETR_main()
     with tab03:
-        st.subheader("STT-01")
-        file = upload_file()
-        st.write(f"Uploaded file: {file}")
-        #speechtotext01()
+        st.subheader("T03")
+        test()
     with tab04:
-        st.subheader("STT-02")
-        speechtotext02()
+        st.subheader("T04")
+        test()
     with tab05:
-        st.subheader("Html2Doc")
-        htmltodoc()
+        st.subheader("T05")
+        test()
 
 if __name__ == '__main__':
-    st.title("Speech Text Analyser")
+    st.title("Image & Video Analyser")
     main()
