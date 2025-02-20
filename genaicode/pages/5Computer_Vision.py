@@ -53,7 +53,7 @@ def DETR_Torchvision():
     model.eval()
 
     # Load and preprocess an image
-    image_path = "temp/new-york-city-4.jpg"
+    image_path = "temp/5851546454_4fdd60e8d5_o.jpg"
     image = Image.open(image_path).convert("RGB")
     transform = T.Compose([T.ToTensor()]) # [T.Resize((800, 800)), T.ToTensor()]
     img_tensor = transform(image).unsqueeze(0)  # add batch dimension
@@ -91,7 +91,7 @@ def DETR_Torchvision():
         i += 1
         label_idx = label.item()  # get integer label
         class_name = CLASSES[label_idx] if label_idx < len(CLASSES) else "NULL"
-        st.write(f"Label[:blue[{i}]]: :blue[{class_name}], Score: :green[{score.item():.3f}], Box: :green[{box.tolist()}]")
+        st.write(f"Label[:blue[{i}]]: :blue[{class_name}], Score: :green[{score.item():.3f}], Box: :green[{[round(i, 4) for i in box.tolist()]}]")
 
     # Print detected objects
     st.write("outputs: ", outputs)
@@ -106,7 +106,7 @@ def DETR_Transformers():
     model = DetrForObjectDetection.from_pretrained("facebook/detr-resnet-50")
 
     # Load and preprocess image
-    image_path = "temp/new-york-city-4.jpg"
+    image_path = "temp/5851546454_4fdd60e8d5_o.jpg"
     image = Image.open(image_path).convert("RGB")
     inputs = processor(images=image, return_tensors="pt")
 
@@ -142,7 +142,7 @@ def DETR_Transformers():
         i += 1
         label_idx = label.item()  # get integer label
         class_name = CLASSES[label_idx] if label_idx < len(CLASSES) else "NULL"
-        st.write(f"Label[:blue[{i}]]: :blue[{class_name}], Score: :green[{score.item():.3f}], Box: :green[{box.tolist()}]")
+        st.write(f"Label[:blue[{i}]]: :blue[{class_name}], Score: :green[{score.item():.3f}], Box: :green[{[round(i, 4) for i in box.tolist()]}]")
 
     # Print detected objects
     st.write("outputs: ", outputs)
@@ -153,7 +153,7 @@ def DETR_Transformers():
 #3. Using DETR with OpenCV for Real-time Webcam Detection
 def DETR_Webcam():
     # Load pretrained model
-    model = torch.hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True, trust_repo=True)
+    model = torch.hub.load(repo_or_dir="facebookresearch/detr", model="detr_resnet50", pretrained=True, trust_repo=True)
     model.eval()
 
     # Preprocessing transformation
@@ -202,7 +202,7 @@ def DETR_PyTorch():
     # Load dataset and model
     dataset = CustomDataset("temp") # path_to_your_dataset
     dataloader = DataLoader(dataset, batch_size=1, shuffle=True)
-    model = torch.hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True, trust_repo=True)
+    model = torch.hub.load(repo_or_dir="facebookresearch/detr", model="detr_resnet50", pretrained=True, trust_repo=True)
     model.eval()
 
     # Inference on dataset
@@ -218,7 +218,7 @@ def DETR_WebAPI():
     app = Flask(__name__)
 
     # Load model
-    model = torch.hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True, trust_repo=True)
+    model = torch.hub.load(repo_or_dir="facebookresearch/detr", model="detr_resnet50", pretrained=True, trust_repo=True)
     model.eval()
     transform = T.Compose([T.ToTensor()])
 
@@ -240,7 +240,7 @@ def DETR_WebAPI():
 
 # Load the pre-trained DETR model from torchvision
 def load_detr_model():
-    model = torch.hub.load('facebookresearch/detr', 'detr_resnet50', pretrained=True, trust_repo=True)
+    model = torch.hub.load(repo_or_dir='facebookresearch/detr', model='detr_resnet50', pretrained=True, trust_repo=True)
     model.eval()  # Set the model to evaluation mode
     return model
 
@@ -270,7 +270,7 @@ def detect_objects(model, image, transform):
 # Rescale bounding boxes to the original image size
 def rescale_bboxes(out_bbox, size):
     img_w, img_h = size
-    b = out_bbox * torch.tensor([img_w, img_h, img_w, img_h], dtype=torch.float32)
+    b = out_bbox * torch.tensor(data=[img_w, img_h, img_w, img_h], dtype=torch.float32)
     b = b.numpy()
     return b
 
@@ -299,7 +299,7 @@ def DETR_main():
     detr_model = load_detr_model()
 
     # Load an image from file
-    image_path = "temp/new-york-city-4.jpg"  # Replace with your image path
+    image_path = "temp/5851546454_4fdd60e8d5_o.jpg"  # Replace with your image path
     image = Image.open(image_path).convert("RGB")
 
     # Define the image transforms
@@ -321,7 +321,7 @@ def DETR_Visualize1():
     model = DetrForObjectDetection.from_pretrained(model_name)
 
     # 2. Load and Preprocess Image
-    image_path = "temp/new-york-city-4.jpg"  # Replace with your image path
+    image_path = "temp/5851546454_4fdd60e8d5_o.jpg"  # Replace with your image path
     image = Image.open(image_path).convert("RGB")
     inputs = feature_extractor(images=image, return_tensors="pt")  # PyTorch tensors
 
@@ -339,6 +339,7 @@ def DETR_Visualize1():
 
     # 5. Visualize Results
     st.subheader("DETR (End-to-End Object Detection) model with ResNet-50 Method-1")
+    plt.figure(figsize=(16, 10))  # Width, height in inches.
     plt.imshow(image)
     ax = plt.gca()
     # Object identified from image based on the selected threshold value
@@ -349,10 +350,10 @@ def DETR_Visualize1():
         st.write(f"Detected :blue[{label}] with confidence :blue[{score}] at location :blue[{box}]")
         # plot the bounding box of detected objects
         x_min, y_min, x_max, y_max = box
-        ax.add_patch(plt.Rectangle(xy=(x_min, y_min), width=(x_max - x_min), height=(y_max - y_min), fill=False, edgecolor='yellow', linewidth=2))
-        plt.text(x_min, y_min - 10, s=f"{label}: {score:.2f}", fontsize=10, fontweight='bold', color='red')
+        ax.add_patch(plt.Rectangle(xy=(x_min, y_min), width=(x_max - x_min), height=(y_max - y_min), fill=False, edgecolor='cyan', linewidth=1))
+        plt.text(x_min + 2, y_max - 2, s=f"{label.upper()}: {score:.2f}", fontsize=8, fontweight='normal', color='black', bbox=dict(facecolor='yellow', alpha=0.5))
     # Overlay and display on the actual image
-    plt.axis('off')
+    plt.axis('on')
     plt.show()
 
 def DETR_Visualize2():
@@ -363,7 +364,7 @@ def DETR_Visualize2():
     model = DetrForObjectDetection.from_pretrained(model_name)
 
     # Preprocess the image with Example image (replace with your own image)
-    image_path = "temp/new-york-city-4.jpg"  # Replace with your image path
+    image_path = "temp/5851546454_4fdd60e8d5_o.jpg"  # Replace with your image path
     image = Image.open(image_path)  # Make sure you have PIL (Pillow) installed: pip install Pillow
     inputs = feature_extractor(images=image, return_tensors="pt")
 
@@ -376,22 +377,34 @@ def DETR_Visualize2():
     logits = outputs.logits
     bboxes = outputs.pred_boxes
 
-    # Print or visualize the results
-    st.subheader("DETR (End-to-End Object Detection) model with ResNet-50 Method-2")
-    st.write(logits.shape)  # Class probabilities
-    st.write(bboxes.shape)  # Bounding boxes (normalized)
-
+    # Extract predictions
     # Convert bounding boxes to pixel coordinates (example)
     width, height = image.size
-    scaled_bboxes = bboxes[0] * torch.tensor([width, height, width, height])
+    logits_scaled = logits.softmax(-1)[0, :, :-1]  # Class probabilities
+    bboxes_scaled = bboxes[0] * torch.tensor(data=[width, height, width, height], dtype=torch.float32)
+    bboxes_scaled = bboxes_scaled.numpy()
+
+    # Print or visualize the results
+    st.subheader("DETR (End-to-End Object Detection) model with ResNet-50 Method-2")
+    st.write("outputs: ", outputs)
+    st.write(f"logits {logits.shape}: ", logits_scaled)  # Class probabilities
+    st.write(f"bboxes {bboxes.shape}: ", bboxes_scaled)  # Bounding boxes (normalized)
 
     # Display the image with bounding boxes
+    plt.figure(figsize=(16, 10)) # Width, height in inches.
     plt.imshow(image)
     ax = plt.gca()
-    for box in scaled_bboxes:
-        x, y, w, h = box.tolist()
-        rect = patches.Rectangle((x, y), w, h, linewidth=1, edgecolor='r', facecolor='none')
-        ax.add_patch(rect)
+    threshold = 0.8
+    for logit, box in zip(logits_scaled, bboxes_scaled):
+        klass = logit.argmax().item()  # Get the predicted class
+        if logit[klass] > threshold:  # Only display objects above the confidence threshold
+            label = f"{CLASSES[klass]}: {logit[klass]:.2f}"
+            x, y, w, h = box.tolist()
+            x0 = x - (w/2); y0 = y - (h/2)
+            ax.add_patch(patches.Rectangle(xy=(x0, y0), width=w, height=h, linewidth=1, edgecolor='cyan', facecolor='none'))
+            ax.text(x0 + 2, y0 - 3, label.upper(), fontsize=8, bbox=dict(facecolor='yellow', alpha=0.5))
+            st.write(f"Box :blue[({label.upper()})] : :green[{[round(i, 2) for i in box.tolist()]}]")
+    plt.axis('on')
     plt.show()
 
 def DETR_Visualize3():
@@ -401,7 +414,7 @@ def DETR_Visualize3():
     model = DetrForObjectDetection.from_pretrained(model_name)
 
     # 2. Load and Preprocess Image
-    image_path = "temp/new-york-city-4.jpg"  # Replace with your image path
+    image_path = "temp/5851546454_4fdd60e8d5_o.jpg"  # Replace with your image path
     image = Image.open(image_path).convert("RGB")
     inputs = feature_extractor(images=image, return_tensors="pt")  # PyTorch tensors
 
@@ -415,13 +428,12 @@ def DETR_Visualize3():
     boxes = outputs.pred_boxes
 
     # Get predicted labels and bounding boxes (scaled to image size)
-    labels = logits.argmax(-1).tolist()[0]  # Get predicted class indices
+    labels = logits.argmax(-1)[0].tolist()  # Get predicted class indices
     scores = torch.nn.functional.softmax(logits, dim=-1)[0, :, labels].max(dim=-1)[0].tolist() # Get confidence scores
     boxes = boxes[0].tolist()  # Get bounding box coordinates (normalized)
 
-    image_width, image_height = image.size
-
     # Convert normalized boxes to pixel coordinates
+    image_width, image_height = image.size
     predicted_boxes = []
     for box in boxes:
         x_min, y_min, x_max, y_max = box
@@ -432,21 +444,29 @@ def DETR_Visualize3():
         predicted_boxes.append([x_min, y_min, x_max, y_max])
 
     # 5. Visualize Results
+    st.subheader("DETR (End-to-End Object Detection) model with ResNet-50 Method-3")
+    st.write("labels: ", labels)
+    st.write("scores: ", scores)
+    st.write("boxes: ", boxes)
+    st.write("predicted_boxes: ", predicted_boxes)
+
     # Get class names (you'll need to map indices to names)
     id2label = model.config.id2label  # Dictionary mapping class indices to names
+    threshold = 0.99  # Adjust confidence threshold as needed
 
+    plt.figure(figsize=(16, 10))  # Width, height in inches.
     plt.imshow(image)
     ax = plt.gca()
 
     for label, score, box in zip(labels, scores, predicted_boxes):
-        if score > 0.99:  # Adjust confidence threshold as needed
+        if score > threshold:  # Adjust confidence threshold as needed
             x_min, y_min, x_max, y_max = box
             ax.add_patch(plt.Rectangle((x_min, y_min), x_max - x_min, y_max - y_min,
                                      fill=False, edgecolor='green', linewidth=1))
             class_name = id2label[label] if label in id2label else f"Class {label}" # Handle cases where label is not in id2label
             plt.text(x_min, y_min - 10, f"{class_name}: {score:.2f}", fontsize=10, color='red')
 
-    plt.axis('off')
+    plt.axis('on')
     plt.show()
 
     # Example of how to save the image (optional)
@@ -512,12 +532,13 @@ def main():
         st.subheader("Using DETR End-to-End Object Detection with Transformers")
         tab04_btn = st.button(label="Click to **Start**", key="tab04_btn")
         if tab04_btn is True:
-            DETR_Visualize1()
+            DETR_Visualize1() # or DETR_Visualize2()
     with tab05:
         st.subheader("DEtection TRansformer (DETR) Methods")
         tab05_btn = st.button(label="Click to **Start**", key="tab05_btn")
         if tab05_btn is True:
-            DETR_Visualize2()
+            DETR_Visualize3()
+            #DETR_main()
 
 if __name__ == '__main__':
     st.title("Computer Vision Transformers")
