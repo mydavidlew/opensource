@@ -183,7 +183,8 @@ def DETR_Webcam():
         # Extract predictions
         img_w, img_h = image.size
         logits_scaled = logits.softmax(-1)[0, :, :-1]  # Class probabilities
-        bboxes_scaled = (bboxes[0] * torch.tensor(data=[img_w, img_h, img_w, img_h], dtype=torch.float32)).numpy()  # Rescale bounding boxes
+        bboxes_scaled = (bboxes[0] * torch.tensor(data=[img_w, img_h, img_w, img_h], dtype=torch.float32))  # Rescale bounding boxes
+        bboxes_scaled = bboxes_scaled.numpy()
 
         # Display the image with bounding boxes
         threshold = 0.80
