@@ -6,6 +6,7 @@ import timm  # Install timm: pip install timm
 import cv2
 import torch
 import torchvision.transforms as T
+from numpy.f2py.crackfortran import endifs
 from torchvision.transforms import functional as F
 from transformers import DetrFeatureExtractor, DetrImageProcessor, DetrForObjectDetection
 from torch.utils.data import DataLoader, Dataset
@@ -163,21 +164,47 @@ def DETR_Webcam():
     st.subheader("3. Using DETR with OpenCV for Real-time Webcam Detection")
     cap = cv2.VideoCapture(0)
     while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
+        _ret, frame = cap.read()
+        if not _ret:
             break
 
         # Convert to PIL image and preprocess
         image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         img_tensor = transform(image).unsqueeze(0)
 
+        # The outputs contain:
         with torch.no_grad():
             outputs = model(img_tensor)
+        # - "pred_logits": classification logits for each of the 100 queries
+        # - "pred_boxes": bounding box predictions for each query
+        logits = outputs['pred_logits']
+        bboxes = outputs['pred_boxes']
+
+        # Extract predictions
+        img_w, img_h = image.size
+        logits_scaled = logits.softmax(-1)[0, :, :-1]  # Class probabilities
+        bboxes_scaled = (bboxes[0] * torch.tensor(data=[img_w, img_h, img_w, img_h], dtype=torch.float32)).numpy()  # Rescale bounding boxes
+
+        # Display the image with bounding boxes
+        threshold = 0.80
+        for logit, box in zip(logits_scaled, bboxes_scaled):
+            klass = logit.argmax().item()  # Get the predicted class
+            if logit[klass] > threshold:  # Only display objects above the confidence threshold
+                label = (f"{CLASSES[klass]}: {logit[klass]:.2f}").upper()
+                x, y, w, h = box.tolist()
+                x0 = int(x - (w / 2)); y0 = int(y - (h / 2)); x1 = int(x0 + w); y1 = int(y0 + h)
+                cv2.rectangle(img=frame, pt1=(x0, y0), pt2=(x1, y1), color=(0, 255, 0), thickness=1, lineType=1)
+                cv2.putText(img=frame, text=label, org=(x0, y0), fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=1.5, color=(255, 0, 0), thickness=2)
+                st.write(f"Object: :blue[{label}], Box: :green[[{x0}, {y0}, {x1}, {y1}]]")
 
         # Display frame (Modify to draw boxes using OpenCV)
         cv2.imshow("DETR Object Detection", frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        keypress = cv2.waitKey(1) & 0xFF
+        if keypress == ord('q'):
             break
+        elif keypress == ord('z'):
+            st.write("logits: ", logits_scaled)
+            st.write("bboxes: ", bboxes_scaled)
 
     cap.release()
     cv2.destroyAllWindows()
