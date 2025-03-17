@@ -329,6 +329,9 @@ def DETR_main():
     # Load an image from file
     image_path = "temp/5851546454_4fdd60e8d5_o.jpg"  # Replace with your image path
     image = Image.open(image_path).convert("RGB")
+    # or from url
+    #url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+    #image = Image.open(requests.get(url, stream=True).raw)
 
     # Define the image transforms
     transform = get_transforms()
@@ -499,6 +502,30 @@ def DETR_Visualize3():
 
     # Example of how to save the image (optional)
     #plt.savefig("detected_objects.jpg")
+
+def DETR_Visualize4():
+    # load and preprocess image
+    image_path = "temp/5851546454_4fdd60e8d5_o.jpg"  # Replace with your image path
+    image = Image.open(image_path).convert("RGB")
+
+    # initialize the model
+    model_name = "facebook/detr-resnet-50"  # Or "facebook/detr-resnet-101" for a larger model
+    processor = DetrImageProcessor.from_pretrained(pretrained_model_name_or_path=model_name, revision="no_timm")
+    model = DetrForObjectDetection.from_pretrained(pretrained_model_name_or_path=model_name, revision="no_timm")
+
+    # preprocess the inputs and infer
+    inputs = processor(images=image, return_tensors="pt")
+    outputs = model(**inputs)
+
+    # convert outputs (bounding boxes and class logits) to COCO API
+    # non max supression above 0.9
+    target_sizes = torch.tensor([image.size[::-1]])
+    results = processor.post_process_object_detection(outputs, target_sizes=target_sizes, threshold=0.9)[0]
+
+    for score, label, box in zip(results["scores"], results["labels"], results["boxes"]):
+        box = [round(i, 2) for i in box.tolist()]
+        print(f"Detected {model.config.id2label[label.item()]} with confidence "
+              f"{round(score.item(), 3)} at location {box}")
 
 def ViT_01():
     # ViT Object Detection (using a library like timm)
