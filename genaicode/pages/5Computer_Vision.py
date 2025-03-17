@@ -593,6 +593,7 @@ def main():
         tab05_btn = st.button(label="Click to **Start**", key="tab05_btn")
         if tab05_btn is True:
             DETR_Visualize3()
+            #DETR_Visualize4()
             #DETR_main()
 
 if __name__ == '__main__':
