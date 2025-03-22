@@ -529,20 +529,21 @@ def DETR_Visualize4():
                  f":blue[**{round(score.item(), 3)}**] at location :green[**{box}**]")
 
 def DETR_Visualize5():
-    image_path = "temp/new-york-city-4.jpg"  # Replace with your image path
+    image_path = "temp/5851546454_4fdd60e8d5_o.jpg"  # Replace with your image path
     image = Image.open(image_path).convert("RGB")
 
     model_name = "microsoft/cvt-13"
-    feature_extractor = AutoFeatureExtractor.from_pretrained(pretrained_model_name_or_path=model_name)
+    processor = AutoFeatureExtractor.from_pretrained(pretrained_model_name_or_path=model_name)
     model = CvtForImageClassification.from_pretrained(pretrained_model_name_or_path=model_name)
 
-    inputs = feature_extractor(images=image, return_tensors="pt")
+    inputs = processor(images=image, return_tensors="pt")
     outputs = model(**inputs)
     logits = outputs.logits
-    
+
     # model predicts one of the 1000 ImageNet classes
     predicted_class_idx = logits.argmax(-1).item()
-    st.write("Predicted class:", model.config.id2label[predicted_class_idx])
+    class_name = model.config.id2label[predicted_class_idx] if predicted_class_idx in model.config.id2label else f"Class {predicted_class_idx}"
+    st.write(f"Predicted class :blue[**{class_name}**]")
 
 def ViT_01():
     # ViT Object Detection (using a library like timm)
