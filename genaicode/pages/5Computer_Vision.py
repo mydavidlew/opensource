@@ -9,6 +9,7 @@ import torchvision.transforms as T
 from numpy.f2py.crackfortran import endifs
 from torchvision.transforms import functional as F
 from transformers import DetrFeatureExtractor, DetrImageProcessor, DetrForObjectDetection
+from transformers import AutoFeatureExtractor, CvtForImageClassification
 from torch.utils.data import DataLoader, Dataset
 from PIL import Image
 
@@ -526,6 +527,22 @@ def DETR_Visualize4():
         box = [round(i, 2) for i in box.tolist()]
         st.write(f"Detected :blue[**{model.config.id2label[label.item()]}**] with confidence "
                  f":blue[**{round(score.item(), 3)}**] at location :green[**{box}**]")
+
+def DETR_Visualize5():
+    image_path = "temp/new-york-city-4.jpg"  # Replace with your image path
+    image = Image.open(image_path).convert("RGB")
+
+    model_name = "microsoft/cvt-13"
+    feature_extractor = AutoFeatureExtractor.from_pretrained(pretrained_model_name_or_path=model_name)
+    model = CvtForImageClassification.from_pretrained(pretrained_model_name_or_path=model_name)
+
+    inputs = feature_extractor(images=image, return_tensors="pt")
+    outputs = model(**inputs)
+    logits = outputs.logits
+    
+    # model predicts one of the 1000 ImageNet classes
+    predicted_class_idx = logits.argmax(-1).item()
+    st.write("Predicted class:", model.config.id2label[predicted_class_idx])
 
 def ViT_01():
     # ViT Object Detection (using a library like timm)
