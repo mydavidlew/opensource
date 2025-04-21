@@ -258,11 +258,11 @@ def decrypt_aes(key, iv, ciphertext):
 if __name__ == "__main__":
     data = "Malaysian Immigration Department (JIM) records 13,846 users have used the application and 117,000 users have downloaded it overall."
     # Call the function to generate the QR code
-#    generate_qr_code(data)
+    generate_qr_code(data)
     # Call the function to read the QR code
-#    read_qr_code()
-
-#    read_qr_code_from_camera()
+    read_qr_code()
+    # Read the QR code capture from camera
+    read_qr_code_from_camera()
 
     plaintext = "Malaysian Immigration Department"
     print(f"Plain Text: {plaintext}")
