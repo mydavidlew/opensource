@@ -18,6 +18,15 @@ def generate_qr_code(data, file_name="qr_code.png"):
     :param file_name: The name of the output file (default: "qr_code.png").
     """
     # Create a QRCode object
+    # Parameters:
+    #   version: Controls the size of the QR code (1 is the smallest, 40 is the largest). Set to None to let the library automatically #determine the size.
+    #   error_correction: Specifies the error correction level:
+    #      ERROR_CORRECT_L: About 7% of the data can be recovered.
+    #      ERROR_CORRECT_M: About 15% of the data can be recovered.
+    #      ERROR_CORRECT_Q: About 25% of the data can be recovered.
+    #      ERROR_CORRECT_H: About 30% of the data can be recovered.
+    #   box_size: Size of each "box" in pixels.
+    #   border: Thickness of the border around the QR code (minimum value is 4).
     qr = qrcode.QRCode(
         version=3,  # Controls the size of the QR Code (1 is the smallest, 40 is the largest)
         error_correction=qrcode.constants.ERROR_CORRECT_L,  # Error correction level
