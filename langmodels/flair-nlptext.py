@@ -35,6 +35,9 @@ tagger = Classifier.load('ner')
 tagger.predict(sentence)
 # print the sentence with all annotations
 print(sentence)
+# iterate and print
+for entity in sentence.get_spans('ner'):
+    print(entity)
 
 # [flair #2]
 # load the model
@@ -55,7 +58,8 @@ sentence = Sentence(text)
 # predict NER tags
 tagger.predict(sentence)
 # print sentence with predicted tags
-print(sentence)
+for label in sentence.get_labels():
+    print(label)
 
 # [flair #4]
 # 1. make example sentence
