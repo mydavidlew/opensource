@@ -1,6 +1,6 @@
 # Here's a working Python example that uses the Hugging Face transformers library, Trainer, and
 # DeepSpeed #with SSD offloading to fine-tune a model (like BERT) with minimal VRAM usage.
-#
+# https://www.deepspeed.ai/getting-started/
 # sudo apt install libopenmpi-dev libaio-dev
 # pip install transformers datasets accelerate deepspeed mpi4py
 #
