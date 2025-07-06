@@ -3,6 +3,7 @@
 # https://www.deepspeed.ai/getting-started/
 # sudo apt install libopenmpi-dev libaio-dev
 # pip install transformers datasets accelerate deepspeed mpi4py
+# Note: Make sure /tmp/deepspeed_offload exists and points to your SSD.
 #
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
 from datasets import load_dataset
