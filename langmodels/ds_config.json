@@ -1,0 +1,25 @@
+{
+  "train_batch_size": "auto",
+  "fp16": {
+    "enabled": true
+  },
+  "zero_optimization": {
+    "stage": 3,
+    "offload_param": {
+      "device": "nvme",
+      "nvme_path": "/tmp/deepspeed_offload"
+    },
+    "offload_optimizer": {
+      "device": "nvme",
+      "nvme_path": "/tmp/deepspeed_offload"
+    },
+    "overlap_comm": true,
+    "contiguous_gradients": true
+  },
+  "aio": {
+    "block_size": 1048576,
+    "queue_depth": 8,
+    "single_submit": false,
+    "overlap_events": true
+  }
+}
