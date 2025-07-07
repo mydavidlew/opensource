@@ -56,6 +56,12 @@ trainer = Trainer(
     eval_dataset=ev_dataset
 )
 
+# 🔧 Tips
+# - SSD location: Use NVMe SSD (fast) for /tmp/deepspeed_offload
+# - zero_stage: Stage 3 gives best memory savings (but can be slower)
+# - Dataset size: Try smaller subsets first to test stability
+# - Optional: Add model.gradient_checkpointing_enable() for deeper savings
+
 # Train
 trainer.train()
 
