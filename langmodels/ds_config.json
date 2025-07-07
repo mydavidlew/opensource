@@ -14,7 +14,8 @@
       "nvme_path": "/tmp/deepspeed_offload"
     },
     "overlap_comm": true,
-    "contiguous_gradients": true
+    "contiguous_gradients": true,
+    "stage3_gather_16bit_weights_on_model_save": true
   },
   "aio": {
     "block_size": 1048576,
