@@ -10,23 +10,28 @@ from datasets import load_dataset
 import torch
 import os
 
-# Check GPU availability
-os.environ['TORCH_CUDA_ARCH_LIST'] = "7.5" # Turing - GeForce GTX 1660 Super
+# Check GPU availability = Turing 7.5 - GeForce GTX 1660 Super
+os.environ['TORCH_CUDA_ARCH_LIST'] = '.'.join(map(str,torch.cuda.get_device_capability())) #=''
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(f"Discover device = {device}")
+print(f"Device architecture = {os.environ.get('TORCH_CUDA_ARCH_LIST')}")
 
-# Load dataset
-dataset = load_dataset("imdb")
-tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+# Load model
+model_name = "bert-base-uncased"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2).to(device)
 
+# Tokenize the datasets
 def tokenize(example):
     return tokenizer(example["text"], padding="max_length", truncation=True)
 
+# Load dataset
+dataset = load_dataset("imdb")
 dataset = dataset.map(tokenize, batched=True)
-dataset = dataset.rename_column("label", "labels")
-dataset.set_format("torch", columns=["input_ids", "attention_mask", "labels"])
-
-# Load model
-model = AutoModelForSequenceClassification.from_pretrained("bert-base-uncased", num_labels=2).to(device)
+dataset = dataset.rename_column(original_column_name="label", new_column_name="labels")
+dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "labels"])
+tr_dataset = dataset["train"].select(range(1000))  # smaller subset for demo
+ev_dataset = dataset["test"].select(range(500))
 
 # Training arguments with DeepSpeed offload to SSD
 training_args = TrainingArguments(
@@ -47,9 +52,16 @@ training_args = TrainingArguments(
 trainer = Trainer(
     model=model,
     args=training_args,
-    train_dataset=dataset["train"].select(range(1000)),  # smaller subset for demo
-    eval_dataset=dataset["test"].select(range(500))
+    train_dataset=tr_dataset,
+    eval_dataset=ev_dataset
 )
 
 # Train
 trainer.train()
+
+# Evaluate the model
+eval_results = trainer.evaluate()
+print(eval_results)
+
+# Save the model
+trainer.save_model("./temp")
