@@ -71,3 +71,15 @@ print(eval_results)
 
 # Save the model
 trainer.save_model("./temp")
+
+# This will save:
+# - pytorch_model.bin (adapter weights or full model)
+# - config.json
+# - tokenizer_config.json
+# - vocab.json or merges.txt (depending on tokenizer type)
+# - special_tokens_map.json
+# If using LoRA/PEFT, only the adapter weights are saved unless you merge them.
+
+# Save model and tokenizer
+model.save_pretrained("./model")
+tokenizer.save_pretrained("./model")
