@@ -13,8 +13,10 @@ import os
 # Check GPU availability = Turing 7.5 - GeForce GTX 1660 Super
 os.environ['TORCH_CUDA_ARCH_LIST'] = '.'.join(map(str,torch.cuda.get_device_capability())) #=''
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print(f"Discover device = {device}")
-print(f"Device architecture = {os.environ.get('TORCH_CUDA_ARCH_LIST')}")
+print(f"Discovered [{torch.cuda.device_count()}] Device = {device}")
+print(f"Device Name = {torch.cuda.get_device_name(device)}")
+print(f"Device Architecture = {os.environ.get('TORCH_CUDA_ARCH_LIST')}")
+print(f"Device Compute Capability = {torch.cuda.get_device_capability(device)}")
 
 # Load model
 model_name = "bert-base-uncased"
