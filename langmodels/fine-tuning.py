@@ -51,7 +51,12 @@ training_args = TrainingArguments(
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
-    return {"accuracy": accuracy_score(labels, predictions)}
+    accuracy = accuracy_score(labels, predictions)
+    precision, recall, f1score, _ = precision_recall_fscore_support(labels, predictions, average='binary')
+    return {"accuracy": accuracy,
+            'precision': precision,
+            'recall': recall,
+            'f1': f1score,}
 
 # Define the Trainer
 trainer = Trainer(
