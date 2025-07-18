@@ -1,5 +1,5 @@
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
-from datasets import load_dataset, load_metric
+from datasets import load_dataset
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 import torch
 import numpy as np
@@ -56,7 +56,7 @@ def compute_metrics(eval_pred):
     return {"accuracy": accuracy,
             'precision': precision,
             'recall': recall,
-            'f1': f1score,}
+            'f1': f1score}
 
 # Define the Trainer
 trainer = Trainer(
