@@ -73,6 +73,10 @@ trainer.train()
 # Evaluate the model
 eval_results = trainer.evaluate()
 print(eval_results)
+print("\n📊 Evaluation Metrics:")
+for metric, value in eval_results.items():
+    if metric != "eval_loss":
+        print(f"{metric}: {value:.4f}")
 
 # Save the model
 trainer.save_model("./temp")
