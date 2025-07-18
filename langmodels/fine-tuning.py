@@ -15,18 +15,18 @@ model = AutoModelForSequenceClassification.from_pretrained(model_name, num_label
 # Load and split dataset
 dataset = load_dataset("imdb")
 train_dataset = dataset["train"]
-val_dataset = dataset["test"]  # IMDb already has a test set
+eval_dataset = dataset["test"]  # IMDb already has a test set
 
 # Tokenize the datasets
 def tokenize_function(example):
     return tokenizer(example["text"], padding="max_length", truncation=True)
 
 train_dataset = train_dataset.map(tokenize_function, batched=True)
-val_dataset = val_dataset.map(tokenize_function, batched=True)
+eval_dataset = eval_dataset.map(tokenize_function, batched=True)
 
 # Set format for PyTorch
 train_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "label"])
-val_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "label"])
+eval_dataset.set_format(type="torch", columns=["input_ids", "attention_mask", "label"])
 
 # Define training arguments with GPU/mixed precision (fp16)
 training_args = TrainingArguments(
@@ -58,7 +58,7 @@ trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=train_dataset,
-    eval_dataset=val_dataset,
+    eval_dataset=eval_dataset,
     compute_metrics=compute_metrics,
 )
 
