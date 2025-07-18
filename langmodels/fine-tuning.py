@@ -1,6 +1,6 @@
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, Trainer, TrainingArguments
-from datasets import load_dataset
-from sklearn.metrics import accuracy_score
+from datasets import load_dataset, load_metric
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 import torch
 import numpy as np
 
