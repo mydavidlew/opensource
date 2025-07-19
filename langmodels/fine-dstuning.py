@@ -6,7 +6,9 @@
 # Note: Make sure /tmp/deepspeed_offload exists and points to your SSD.
 #
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, Trainer, TrainingArguments
+from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from datasets import load_dataset
+import numpy as np
 import torch
 import os
 
@@ -50,12 +52,24 @@ training_args = TrainingArguments(
     fp16=True                      # <-- Enable mixed precision
 )
 
+# Define metrics
+def compute_metrics(eval_pred):
+    logits, labels = eval_pred
+    predictions = np.argmax(logits, axis=-1)
+    accuracy = accuracy_score(labels, predictions)
+    precision, recall, f1score, _ = precision_recall_fscore_support(labels, predictions, average='binary')
+    return {"accuracy": accuracy,
+            'precision': precision,
+            'recall': recall,
+            'f1': f1score}
+
 # Trainer
 trainer = Trainer(
     model=model,
     args=training_args,
     train_dataset=tr_dataset,
-    eval_dataset=ev_dataset
+    eval_dataset=ev_dataset,
+    compute_metrics=compute_metrics,
 )
 
 # 🔧 Tips
@@ -70,6 +84,10 @@ trainer.train()
 # Evaluate the model
 eval_results = trainer.evaluate()
 print(eval_results)
+print("\n📊 Evaluation Metrics:")
+for metric, value in eval_results.items():
+    if metric != "eval_loss":
+        print(f"{metric}: {value:.4f}")
 
 # Save the model
 trainer.save_model("./temp")
