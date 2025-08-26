@@ -6,11 +6,12 @@ class MySqlConnector:
     """
     This class is used to connect to the MySQL database and Execute query and showing results
     """
-    def __init__(self, host, user, password, database):
+    def __init__(self, host, user, password, database, port=3306):
         self.host = host
         self.user = user
         self.password = password
         self.database = database
+        self.port = port
         self.columns_info = None
         self.tables = None
 
@@ -24,6 +25,7 @@ class MySqlConnector:
                 user=self.user,
                 password=self.password,
                 database=self.database
+                port = self.port
             )
             return conn
         except mysql.connector.Error as err:
