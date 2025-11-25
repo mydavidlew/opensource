@@ -80,3 +80,13 @@ for metric, value in eval_results.items():
 
 # Save the model
 trainer.save_model("./temp")
+
+# Result: 📊 Evaluation Metrics
+# eval_accuracy: 0.9414
+# eval_precision: 0.9424
+# eval_recall: 0.9402
+# eval_f1: 0.9413
+# eval_runtime: 37.7995
+# eval_samples_per_second: 661.3840
+# eval_steps_per_second: 10.3440
+# epoch: 3.0000
